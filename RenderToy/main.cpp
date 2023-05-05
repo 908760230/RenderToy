@@ -1,17 +1,18 @@
 #include <winsdkver.h>
 #include "MainWindow.h"
+#include "Engine.h"
+#include <iostream>
 
-
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+int  main (int argc, char* agrv[]) {
 	
-	MainWindow window(hInstance);
-
-	window.resize(800, 600);
-	window.setWindowTitle("你的第一个窗体程序");
-
+	MainWindow window;
+	window.setWindowTitle("Toy");
 	window.show();
+
+	Engine engine;
+	engine.setMainWindow(&window);
+	engine.init();
+	engine.run();
 
 	return 0;
 }

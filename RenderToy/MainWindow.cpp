@@ -1,15 +1,12 @@
 #include "MainWindow.h"
+#include <iostream>
 
 const char* WINDOW_CLASS_NAME = "WINCLASS1";
 
-
-
-// FUNCTIONS //////////////////////////////////////////////
-LRESULT CALLBACK WindowProc(HWND hwnd,
+LRESULT  WindowProc(HWND hwnd,
 	UINT msg,
 	WPARAM wparam,
-	LPARAM lparam)
-{
+	LPARAM lparam) { 
 	// this is the main message handler of the system
 	PAINTSTRUCT		ps;		// used in WM_PAINT
 	HDC				hdc;	// handle to a device context
@@ -19,18 +16,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
 	{
 	case WM_CREATE:
 	{
-		// ´°Ìå¾ÓÖĞÏÔÊ¾
+		// çª—ä½“å±…ä¸­æ˜¾ç¤º
 		int scrWidth, scrHeight;
 		RECT rect;
-		//»ñµÃÆÁÄ»³ß´ç
+		//è·å¾—å±å¹•å°ºå¯¸
 		scrWidth = GetSystemMetrics(SM_CXSCREEN);
 		scrHeight = GetSystemMetrics(SM_CYSCREEN);
-		//È¡µÃ´°¿Ú³ß´ç
+		//å–å¾—çª—å£å°ºå¯¸
 		GetWindowRect(hwnd, &rect);
-		//ÖØĞÂÉèÖÃrectÀïµÄÖµ
+		//é‡æ–°è®¾ç½®recté‡Œçš„å€¼
 		rect.left = (scrWidth - rect.right) / 2;
 		rect.top = (scrHeight - rect.bottom) / 2;
-		//ÒÆ¶¯´°¿Úµ½Ö¸¶¨µÄÎ»ÖÃ
+		//ç§»åŠ¨çª—å£åˆ°æŒ‡å®šçš„ä½ç½®
 		SetWindowPos(hwnd, HWND_TOP, rect.left, rect.top, rect.right, rect.bottom, SWP_SHOWWINDOW);
 	} break;
 
@@ -49,7 +46,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
 	{
 		// kill the application, this sends a WM_QUIT message 
 		PostQuitMessage(0);
-
 		// return success
 		return(0);
 	} break;
@@ -58,12 +54,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
 
 	} // end switch
 
-// process any messages that we didn't take care of 
 	return (DefWindowProc(hwnd, msg, wparam, lparam));
+}
 
-} // end WinProc
-
-MainWindow::MainWindow(HINSTANCE h):hinstance(h)
+MainWindow::MainWindow()
 {
 	// first fill in the window class stucture
 	winclass.cbSize = sizeof(WNDCLASSEX);
@@ -72,7 +66,7 @@ MainWindow::MainWindow(HINSTANCE h):hinstance(h)
 	winclass.lpfnWndProc = WindowProc;
 	winclass.cbClsExtra = 0;
 	winclass.cbWndExtra = 0;
-	winclass.hInstance = hinstance;
+	winclass.hInstance = GetModuleHandle(nullptr);
 	winclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 	winclass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	winclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
@@ -89,22 +83,20 @@ int MainWindow::show()
 		windowTitle.c_str(), // title
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		0, 0,	    // initial x,y
-		width, height,  // initial width, height
+		m_width, m_height,  // initial width, height
 		NULL,	    // handle to parent 
 		NULL,	    // handle to menu
-		hinstance,// instance of this application
+		nullptr,// instance of this application
 		NULL);
 
 	if (!hwnd) return 0;
-
-	messagePump();
-	return msg.wParam;
+	return 1;
 }
 
 void MainWindow::resize(int w, int h)
 {
-	width = w;
-	height = h;
+	m_width = w;
+	m_height = h;
 }
 
 void MainWindow::setWindowTitle(std::string name)
@@ -112,11 +104,12 @@ void MainWindow::setWindowTitle(std::string name)
 	windowTitle = name;
 }
 
-void MainWindow::messagePump()
+bool MainWindow::processEvent()
 {
-	while (GetMessage(&msg,NULL,0,0))
+	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+	return true;
 }
