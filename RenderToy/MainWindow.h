@@ -12,6 +12,7 @@ class MainWindow
 public:
 	MainWindow();
 	MainWindow(const MainWindow&) = delete;
+	MainWindow& operator=(const MainWindow&) = delete;
 
 	int show();
 	void resize(int w, int h);

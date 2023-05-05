@@ -62,6 +62,7 @@ Engine::Engine()
 
 Engine::~Engine()
 {
+    cleanupSwapChain();
     vkDestroyPipeline(m_logicalDevice, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_logicalDevice, m_graphicsPipelineLayout, nullptr);
     vkDestroyRenderPass(m_logicalDevice, m_renderPass, nullptr);
@@ -414,8 +415,13 @@ void Engine::drawFrame()
 
     presentInfo.pImageIndices = &imageIndex;
 
-    vkQueuePresentKHR(m_presentQueue, &presentInfo);
-
+    auto result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ) {
+        recreateSwapChain();
+    }
+    else if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to present swap chain image!");
+    }
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -806,4 +812,35 @@ void Engine::createSyncObjects()
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
+}
+
+void Engine::recreateSwapChain()
+{
+    //int width = 0, height = 0;
+    //glfwGetFramebufferSize(window, &width, &height);
+    //while (width == 0 || height == 0) {
+    //    glfwGetFramebufferSize(window, &width, &height);
+    //    glfwWaitEvents();
+    //}
+
+    vkDeviceWaitIdle(m_logicalDevice);
+
+    cleanupSwapChain();
+
+    createSwapChain();
+    createImageViews();
+    createFramebuffers();
+}
+
+void Engine::cleanupSwapChain()
+{
+    for (auto framebuffer : m_swapChainFramebuffers) {
+        vkDestroyFramebuffer(m_logicalDevice, framebuffer, nullptr);
+    }
+
+    for (auto imageView : m_swapChainImageViews) {
+        vkDestroyImageView(m_logicalDevice, imageView, nullptr);
+    }
+
+    vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, nullptr);
 }

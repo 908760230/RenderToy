@@ -61,6 +61,9 @@ private:
 	void createCommandPool();
 	void createCommandBuffers();
 	void createSyncObjects();
+	void recreateSwapChain();
+	void cleanupSwapChain();
+
 private:
 	MainWindow* mainWindow = nullptr;
 	VkInstance m_instance = nullptr;

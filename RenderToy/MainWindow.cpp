@@ -49,7 +49,13 @@ LRESULT  WindowProc(HWND hwnd,
 		// return success
 		return(0);
 	} break;
-
+	case WM_SIZE: {
+		RECT rect;
+		GetWindowRect(hwnd, &rect);
+		int width = rect.right - rect.left;
+		int height = rect.bottom - rect.top;
+		break;
+	}
 	default:break;
 
 	} // end switch
