@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <optional>
+
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 struct QueueFamilyIndices {
@@ -53,6 +54,12 @@ private:
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	void drawFrame();
 	void updateUniformBuffer(uint32_t currentImage);
+	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+	VkCommandBuffer beginSingleTimeCommands();
+	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+	VkImageView createImageView(VkImage image, VkFormat format);
 private:
 	void createInstance();
 	void setupDebugMessenger();
@@ -74,6 +81,9 @@ private:
 	void createUniformBuffers();
 	void createDescriptorPool();
 	void createDescriptorSets();
+	void createTextureImage();
+	void createTextureImageView();
+	void creteTextureSampler();
 
 private:
 	MainWindow* mainWindow = nullptr;
@@ -113,5 +123,11 @@ private:
 
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;
+
+	VkImage m_textureImage;
+	VkDeviceMemory m_textureImageMemory;
+	VkImageView m_textureImageView;
+	VkSampler m_textureSampler;
+
 };
 
