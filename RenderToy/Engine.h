@@ -68,6 +68,7 @@ private:
 	void recreateSwapChain();
 	void cleanupSwapChain();
 	void createVertexBuffer();
+	void createindexBuffer();
 
 private:
 	MainWindow* mainWindow = nullptr;
@@ -96,5 +97,8 @@ private:
 
 	VkBuffer m_vertexBuffer;
 	VkDeviceMemory m_vertexBufferMemory;
+
+	VkBuffer m_indexBuffer;
+	VkDeviceMemory m_indexBufferMemory;
 };
 

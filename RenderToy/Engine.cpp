@@ -41,10 +41,14 @@ struct  Vertex
 };
 
 const std::vector<Vertex> vertices = {
- { {0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
- { {0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
- { {-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    { {-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    { {0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    { {0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    { {-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
 };
+
+const std::vector<uint16_t> indices = { 0,1,2,2,3,0 };
+
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
@@ -102,13 +106,24 @@ Engine::Engine()
 Engine::~Engine()
 {
     cleanupSwapChain();
+    vkDestroyBuffer(m_logicalDevice, m_indexBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_indexBufferMemory, nullptr);
+
+    vkDestroyBuffer(m_logicalDevice, m_vertexBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_vertexBufferMemory, nullptr);
+
     vkDestroyPipeline(m_logicalDevice, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_logicalDevice, m_graphicsPipelineLayout, nullptr);
     vkDestroyRenderPass(m_logicalDevice, m_renderPass, nullptr);
-    for (auto imageView : m_swapChainImageViews) {
-        vkDestroyImageView(m_logicalDevice, imageView, nullptr);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroySemaphore(m_logicalDevice, m_renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(m_logicalDevice, m_imageAvailableSemaphores[i], nullptr);
+        vkDestroyFence(m_logicalDevice, m_inFlightFences[i], nullptr);
     }
-    vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, nullptr);
+
+    vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
+
     vkDestroyDevice(m_logicalDevice, nullptr);
     DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
     vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
@@ -130,6 +145,7 @@ void Engine::init()
     createFramebuffers();
     createCommandPool();
     createVertexBuffer();
+    createindexBuffer();
     createCommandBuffers();
     createSyncObjects();
 }
@@ -481,8 +497,9 @@ void Engine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIn
     VkBuffer vertexBuffers[] = { m_vertexBuffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-    vkCmdDraw(commandBuffer, vertices.size(), 1, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0,0);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -976,6 +993,25 @@ void Engine::createVertexBuffer()
 
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vertexBuffer, m_vertexBufferMemory);
     copyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
+
+    vkDestroyBuffer(m_logicalDevice, stagingBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, stagingBufferMemory, nullptr);
+}
+
+void Engine::createindexBuffer()
+{
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    void* data;
+    vkMapMemory(m_logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, indices.data(), bufferSize);
+    vkUnmapMemory(m_logicalDevice, stagingBufferMemory);
+
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_indexBuffer, m_indexBufferMemory);
+    copyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
 
     vkDestroyBuffer(m_logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(m_logicalDevice, stagingBufferMemory, nullptr);
