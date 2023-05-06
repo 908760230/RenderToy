@@ -52,6 +52,7 @@ private:
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	void drawFrame();
+	void updateUniformBuffer(uint32_t currentImage);
 private:
 	void createInstance();
 	void setupDebugMessenger();
@@ -69,6 +70,10 @@ private:
 	void cleanupSwapChain();
 	void createVertexBuffer();
 	void createindexBuffer();
+	void createDescriptorSetLayout();
+	void createUniformBuffers();
+	void createDescriptorPool();
+	void createDescriptorSets();
 
 private:
 	MainWindow* mainWindow = nullptr;
@@ -100,5 +105,13 @@ private:
 
 	VkBuffer m_indexBuffer;
 	VkDeviceMemory m_indexBufferMemory;
+
+	VkDescriptorSetLayout m_descriptorSetLayout;
+	std::vector<VkBuffer> m_uniformBuffers;
+	std::vector<VkDeviceMemory> m_uniformBuffersMemory;
+	std::vector<void*> m_uniformBuffersMapped;
+
+	VkDescriptorPool m_descriptorPool;
+	std::vector<VkDescriptorSet> m_descriptorSets;
 };
 
