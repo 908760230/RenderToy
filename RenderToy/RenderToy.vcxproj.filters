@@ -35,5 +35,8 @@
     <ClInclude Include="UniformObject.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="tiny_obj_loader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
