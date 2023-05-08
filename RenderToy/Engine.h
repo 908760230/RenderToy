@@ -59,7 +59,10 @@ private:
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	VkCommandBuffer beginSingleTimeCommands();
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-	VkImageView createImageView(VkImage image, VkFormat format);
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
+	VkFormat findDepthFormat();
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 private:
 	void createInstance();
 	void setupDebugMessenger();
@@ -84,6 +87,7 @@ private:
 	void createTextureImage();
 	void createTextureImageView();
 	void creteTextureSampler();
+	void createDepthResources();
 
 private:
 	MainWindow* mainWindow = nullptr;
@@ -129,5 +133,8 @@ private:
 	VkImageView m_textureImageView;
 	VkSampler m_textureSampler;
 
+	VkImage m_depthImage;
+	VkDeviceMemory m_depthImageMemory;
+	VkImageView m_depthImageView;
 };
 
