@@ -16,21 +16,6 @@
 #include "tiny_obj_loader.h"
 
 
-
-//const std::vector<Vertex> vertices = {
-//    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-//    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-//    { {0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-//    { {-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-//    { {-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-//   { {0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-//   { {0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-//   { {-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-//
-//};
-//
-//const std::vector<uint16_t> indices = { 0,1,2,2,3,0,4, 5, 6, 6, 7, 4 };
-
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
@@ -88,6 +73,8 @@ bool hasStencilComponent(VkFormat format) {
 
 Engine::Engine()
 {
+    m_mainWindow.setWindowTitle(getWindowTitle());
+    m_mainWindow.show();
 }
 
 Engine::~Engine()
@@ -135,14 +122,29 @@ void Engine::init()
     createSwapChain();
     createImageViews();
     createRenderPass();
-
-    createDescriptorSetLayout();
-    createGraphicPipeline();
-    createCommandPool();
-
     createColorResources();
     createDepthResources();
     createFramebuffers();
+
+    prepare();
+}
+
+void Engine::run()
+{
+    bool result = true;
+    while (result)
+    {
+        result = m_mainWindow.processEvent();
+        if(result) drawFrame();
+    }
+    vkDeviceWaitIdle(m_logicalDevice);
+}
+
+void Engine::prepare()
+{
+    createDescriptorSetLayout();
+    createGraphicPipeline();
+    createCommandPool();
     createTextureImage();
     createTextureImageView();
     creteTextureSampler();
@@ -156,15 +158,8 @@ void Engine::init()
     createSyncObjects();
 }
 
-void Engine::run()
+void Engine::draw()
 {
-    bool result = true;
-    while (result)
-    {
-        result = mainWindow->processEvent();
-        drawFrame();
-    }
-    vkDeviceWaitIdle(m_logicalDevice);
 }
 
 bool Engine::checkValidationLayerSupport()
@@ -365,7 +360,7 @@ VkExtent2D Engine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities
     }
     else {
         VkExtent2D actualExtent = {
-            static_cast<uint32_t>(mainWindow->width(),mainWindow->height())
+            static_cast<uint32_t>(m_mainWindow.width(),m_mainWindow.height())
         };
 
         actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
@@ -657,7 +652,7 @@ void Engine::createSurface()
 {
     VkWin32SurfaceCreateInfoKHR createInfo = { };
     createInfo.sType =  VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    createInfo.hwnd = mainWindow->windowHandle();
+    createInfo.hwnd = m_mainWindow.windowHandle();
     createInfo.hinstance = GetModuleHandle(nullptr);
     if (vkCreateWin32SurfaceKHR(m_instance, &createInfo, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");

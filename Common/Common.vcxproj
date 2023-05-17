@@ -19,14 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Application.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="MainWindow.h" />
     <ClInclude Include="tiny_obj_loader.h" />
     <ClInclude Include="UniformObject.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Application.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="MainWindow.cpp" />
   </ItemGroup>

@@ -83,10 +83,11 @@ public:
 	Engine();
 	~Engine();
 
-	void setMainWindow(MainWindow* window) { mainWindow = window; }
 	void init();
 	void run();
-
+	virtual std::string getWindowTitle() const{ return "Render Toy"; }
+	virtual void prepare();
+	virtual void draw();
 private:
 	bool checkValidationLayerSupport();
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -119,6 +120,7 @@ private:
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	void generateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 	VkSampleCountFlagBits getMaxUsableSampleCount();
+
 private:
 	void createInstance();
 	void setupDebugMessenger();
@@ -147,7 +149,6 @@ private:
 	void createColorResources();
 	void loadModel();
 private:
-	MainWindow* mainWindow = nullptr;
 	VkInstance m_instance = nullptr;
 	VkSurfaceKHR m_surface = nullptr;
 	VkPhysicalDevice m_physicalDevice = nullptr;
@@ -203,5 +204,8 @@ private:
 	VkImage m_colorImage;
 	VkDeviceMemory m_colorImageMemory;
 	VkImageView m_colorImageView;
+
+	MainWindow m_mainWindow;
+
 };
 

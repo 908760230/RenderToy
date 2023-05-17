@@ -2,6 +2,7 @@
 #include <iostream>
 
 const char* WINDOW_CLASS_NAME = "WINCLASS1";
+MainWindow* instance;
 
 LRESULT  WindowProc(HWND hwnd,
 	UINT msg,
@@ -46,6 +47,7 @@ LRESULT  WindowProc(HWND hwnd,
 	{
 		// kill the application, this sends a WM_QUIT message 
 		PostQuitMessage(0);
+		instance->exited = true;
 		// return success
 		return(0);
 	} break;
@@ -79,6 +81,7 @@ MainWindow::MainWindow()
 	winclass.lpszMenuName = NULL;
 	winclass.lpszClassName = "WINCLASS1";
 	winclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	instance = this;
 }
 
 int MainWindow::show()
@@ -112,10 +115,11 @@ void MainWindow::setWindowTitle(std::string name)
 
 bool MainWindow::processEvent()
 {
-	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+	if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+	if (exited) return false;
 	return true;
 }
