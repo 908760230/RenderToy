@@ -1323,6 +1323,7 @@ void Engine::recreateSwapChain()
 
     createSwapChain();
     createImageViews();
+    createColorResources();
     createDepthResources();
     createFramebuffers();
 }
