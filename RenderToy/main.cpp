@@ -1,18 +1,8 @@
-#include <winsdkver.h>
-#include "MainWindow.h"
-#include "Engine.h"
-#include <iostream>
+#include <Application.h>
 
 int  main (int argc, char* agrv[]) {
-	
-	MainWindow window;
-	window.setWindowTitle("Toy");
-	window.show();
-
-	Engine engine;
-	engine.setMainWindow(&window);
-	engine.init();
-	engine.run();
-
+	Application app;
+	app.init();
+	app.run();
 	return 0;
 }

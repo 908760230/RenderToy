@@ -77,7 +77,7 @@ MainWindow::MainWindow()
 	winclass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	winclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	winclass.lpszMenuName = NULL;
-	winclass.lpszClassName = WINDOW_CLASS_NAME;
+	winclass.lpszClassName = "WINCLASS1";
 	winclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 }
 
@@ -85,7 +85,7 @@ int MainWindow::show()
 {
 	if (!RegisterClassEx(&winclass)) return 0;
 	hwnd = CreateWindowEx(NULL, // extended style
-		WINDOW_CLASS_NAME,   // class
+		"WINCLASS1",   // class
 		windowTitle.c_str(), // title
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		0, 0,	    // initial x,y
