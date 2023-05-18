@@ -73,6 +73,7 @@
     <ExternalIncludePath>D:\VS2019Project\RenderToy\Common;C:\VulkanSDK\1.3.243.0\Include;$(ExternalIncludePath)</ExternalIncludePath>
     <LibraryWPath>$(LibraryWPath)</LibraryWPath>
     <LibraryPath>C:\VulkanSDK\1.3.243.0\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>F:\vs2017Projects\RenderToy\Common;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
