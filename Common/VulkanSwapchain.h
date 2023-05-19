@@ -18,8 +18,8 @@ public:
 	VkExtent2D extend2D() { return m_swapchainExtent; }
 	void clear();
 	void recreate();
-	uint32_t beginFrame(VkCommandBuffer commandBuffer, VkSemaphore semaphore);
-	void endFrame(uint32_t imageIndex, const VkSemaphore* signalSemaphores);
+	void beginFrame(VkCommandBuffer commandBuffer, VkSemaphore semaphore);
+	VkResult endFrame( const VkSemaphore* signalSemaphores);
 	SwapChainSupportDetails querySwapChainSupport(VulkanDevice* device);
 	VkRenderPass renderPass() const { return m_renderPass; }
 	VkFramebuffer frameBuffer(uint32_t index) { return m_swapchainFramebuffers[index]; }
@@ -44,5 +44,6 @@ private:
 
 	VkRenderPass m_renderPass = nullptr;
 	VkQueue m_presentQueue = nullptr;
+	uint32_t m_imageIndex = 0;
 };
 

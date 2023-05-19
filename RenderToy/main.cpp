@@ -1,7 +1,7 @@
-#include <Engine.h>
+#include "Application.h"
 
 int  main (int argc, char* agrv[]) {
-	Engine app;
+	Application app;
 	app.init();
 	app.run();
 	return 0;

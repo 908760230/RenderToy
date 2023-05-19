@@ -21,8 +21,9 @@ public:
 	VulkanDevice();
 	~VulkanDevice();
 	VulkanDevice(const VulkanDevice& other);
-	void createDevice(VkPhysicalDevice physicalDevice,VkSurfaceKHR surface);
+	void createDevice(VkPhysicalDevice physicalDevice,VkSurfaceKHR surface, bool validation = false);
 	VkDevice logicalDevice() const { return m_logicalDevice; }
+	VkCommandPool commandPool() const{ return m_commandPool; }
 	VkPhysicalDevice physicalDevice() const { return m_physicalDevice; }
 	VkQueue graphicQueue() const { return m_graphicsQueue; }
 	VkQueue presentQueue() const { return m_presentQueue; }

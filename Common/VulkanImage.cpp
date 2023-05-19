@@ -1,5 +1,6 @@
 #include "VulkanImage.h"
 #include <stdexcept>
+#include "VulkanCommand.h"
 
 VulkanImage::~VulkanImage()
 {
@@ -48,8 +49,22 @@ void VulkanImage::createImage(uint32_t width, uint32_t height, uint32_t mipLevel
     }
 
     vkBindImageMemory(m_vulkanDevice->logicalDevice(), m_image, m_imageMemory, 0);
+    VkImageAspectFlagBits aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
+    createImageView(m_image, format, aspectFlag, mipLevels);
+}
 
-    createImageView(m_image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+void VulkanImage::generateMipMaps(VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
+{
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(m_vulkanDevice->physicalDevice(), imageFormat, &formatProperties);
+
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+        throw std::runtime_error("texture image format does not support linear blitting!");
+    }
+
+    VulkanCommand command(m_vulkanDevice);
+    command.generateMipMaps(m_image, texWidth, texHeight, mipLevels);
 }
 
 void VulkanImage::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)

@@ -8,8 +8,6 @@ VulkanSwapchain::VulkanSwapchain()
 VulkanSwapchain::~VulkanSwapchain()
 {
     clear();
-
-    vkDestroyRenderPass(m_vulkanDevice->logicalDevice(), m_renderPass, nullptr);
 }
 
 void VulkanSwapchain::init(VulkanDevice* device)
@@ -49,7 +47,7 @@ void VulkanSwapchain::createSwapChain(VulkanDevice* device)
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
+    
     std::vector<uint32_t> indices = device->queueFamilyIndices();
     if (indices.size() >=2 && indices[0] != indices[1]) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -95,6 +93,7 @@ void VulkanSwapchain::clear()
     for (auto image : m_swapchainImages) {
         image = VulkanImage();
     }
+    vkDestroyRenderPass(m_vulkanDevice->logicalDevice(), m_renderPass, nullptr);
     vkDestroySwapchainKHR(m_vulkanDevice->logicalDevice(), m_swapchain, nullptr);
 }
 
@@ -105,42 +104,26 @@ void VulkanSwapchain::recreate()
     init(m_vulkanDevice);
 }
 
-uint32_t VulkanSwapchain::beginFrame(VkCommandBuffer commandBuffer , VkSemaphore semaphore)
+void VulkanSwapchain::beginFrame(VkCommandBuffer commandBuffer , VkSemaphore semaphore)
 {
-
-    uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(m_vulkanDevice->logicalDevice(), m_swapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, &imageIndex);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreate();
-        return imageIndex;
-    }
-    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    VkResult result = vkAcquireNextImageKHR(m_vulkanDevice->logicalDevice(), m_swapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, &m_imageIndex);
+     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
-    vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-    return imageIndex;
 }
 
-void VulkanSwapchain::endFrame(uint32_t imageIndex,const VkSemaphore *signalSemaphores)
+VkResult VulkanSwapchain::endFrame(const VkSemaphore *signalSemaphores)
 {
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
-
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &m_swapchain;
-
-    presentInfo.pImageIndices = &imageIndex;
-
-    auto result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        recreate();
+    presentInfo.pImageIndices = &m_imageIndex;
+    if (signalSemaphores != nullptr) {
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = signalSemaphores;
     }
-    else if (result != VK_SUCCESS) {
-        throw std::runtime_error("failed to present swap chain image!");
-    }
+    return vkQueuePresentKHR(m_presentQueue, &presentInfo);
 }
 
 void VulkanSwapchain::createRenderPass()
@@ -302,7 +285,7 @@ VkPresentModeKHR VulkanSwapchain::chooseSwapPresentMode(const std::vector<VkPres
         }
     }
 
-    return VK_PRESENT_MODE_FIFO_KHR;
+    return VK_PRESENT_MODE_IMMEDIATE_KHR;
 }
 
 VkExtent2D VulkanSwapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)

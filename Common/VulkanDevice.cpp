@@ -31,7 +31,7 @@ VulkanDevice::VulkanDevice(const VulkanDevice& other)
     m_msaa = other.m_msaa;
 }
 
-void VulkanDevice::createDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+void VulkanDevice::createDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, bool validation)
 {
     m_physicalDevice = physicalDevice;
     m_surface = surface;
@@ -66,8 +66,10 @@ void VulkanDevice::createDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR su
     createInfo.enabledExtensionCount = deviceExtensions.size();
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-    createInfo.ppEnabledLayerNames = validationLayers.data();
+    if (validation) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+    }
 
     if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_logicalDevice) != VK_SUCCESS) {
         throw std::runtime_error("failed to create logical device!");
@@ -75,6 +77,15 @@ void VulkanDevice::createDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR su
 
     vkGetDeviceQueue(m_logicalDevice, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_logicalDevice, indices.presentFamily.value(), 0, &m_presentQueue);
+
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = indices.graphicsFamily.value();
+
+    if (vkCreateCommandPool(m_logicalDevice, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create command pool!");
+    }
 }
 
 void VulkanDevice::wait()

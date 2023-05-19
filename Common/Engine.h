@@ -16,6 +16,10 @@
 
 #include "VulkanDevice.h"
 #include "VulkanSwapchain.h"
+#include "VulkanBuffer.h"
+#include "VulkanCommand.h"
+
+#include <chrono>
 
 struct  Vertex
 {
@@ -76,6 +80,8 @@ public:
 	virtual std::string getWindowTitle() const{ return "Render Toy"; }
 	virtual void prepare();
 	virtual void draw();
+	virtual void buildCommandBuffers();
+	void enableValidationLayer() { m_validationLayer = true; };
 private:
 	bool checkValidationLayerSupport();
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -85,18 +91,12 @@ private:
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 
-	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	void drawFrame();
 	void updateUniformBuffer(uint32_t currentImage);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-	VkCommandBuffer beginSingleTimeCommands();
-	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
-	void generateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
 private:
 	void createInstance();
@@ -129,23 +129,16 @@ private:
 	VkPipeline m_graphicsPipeline;
 	VkPipelineLayout m_graphicsPipelineLayout;
 
-	VkCommandPool m_commandPool;
 	std::vector<VkCommandBuffer> m_commandBuffers;
 	std::vector<VkSemaphore> m_imageAvailableSemaphores;
 	std::vector<VkSemaphore> m_renderFinishedSemaphores;
 	std::vector<VkFence> m_inFlightFences;
 	uint32_t m_currentFrame = 0;
 
-	VkBuffer m_vertexBuffer;
-	VkDeviceMemory m_vertexBufferMemory;
 
-	VkBuffer m_indexBuffer;
-	VkDeviceMemory m_indexBufferMemory;
 
 	VkDescriptorSetLayout m_descriptorSetLayout;
-	std::vector<VkBuffer> m_uniformBuffers;
-	std::vector<VkDeviceMemory> m_uniformBuffersMemory;
-	std::vector<void*> m_uniformBuffersMapped;
+	std::vector<VulkanBuffer> m_uniformBuffers;
 
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;
@@ -154,12 +147,16 @@ private:
 	VulkanImage m_textureImage;
 	VkSampler m_textureSampler;
 
+	VulkanBuffer m_indexBuffer;
+	VulkanBuffer m_vertexBuffer;
 
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
 
 	uint32_t m_mipLevels = 1;
 	MainWindow m_mainWindow;
-
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_preTimePoint;
+	uint32_t m_frameCount = 0;
+	bool m_validationLayer = true;
 };
 
