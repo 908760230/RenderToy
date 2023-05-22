@@ -4,9 +4,18 @@
 
 VulkanImage::~VulkanImage()
 {
-    if (m_image) vkDestroyImage(m_vulkanDevice->logicalDevice(), m_image, nullptr);
-    if (m_imageView) vkDestroyImageView(m_vulkanDevice->logicalDevice(), m_imageView, nullptr);
-    if(m_imageMemory) vkFreeMemory(m_vulkanDevice->logicalDevice(), m_imageMemory, nullptr);
+    if (m_image) {
+        vkDestroyImage(m_vulkanDevice->logicalDevice(), m_image, nullptr);
+        m_image = nullptr;
+    }
+    if (m_imageView) {
+        vkDestroyImageView(m_vulkanDevice->logicalDevice(), m_imageView, nullptr);
+        m_imageView = nullptr;
+    }
+    if (m_imageMemory) {
+        vkFreeMemory(m_vulkanDevice->logicalDevice(), m_imageMemory, nullptr);
+        m_imageMemory = nullptr;
+    }
 }
 
 void VulkanImage::createImage(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)

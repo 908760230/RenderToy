@@ -28,6 +28,8 @@ void VulkanCommand::copyBuffer(const VulkanBuffer& srcBuffer, const VulkanBuffer
     VkBufferCopy copyRegion{};
     copyRegion.size = dstBuffer.size();
     vkCmdCopyBuffer(m_commandBuffer, srcBuffer.buffer(), dstBuffer.buffer(), 1, &copyRegion);
+    submit();
+
 }
 
 void VulkanCommand::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
@@ -48,6 +50,8 @@ void VulkanCommand::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t w
     };
 
     vkCmdCopyBufferToImage(m_commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    submit();
+
 }
 
 void VulkanCommand::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
@@ -111,6 +115,7 @@ void VulkanCommand::transitionImageLayout(VkImage image, VkFormat format, VkImag
         0, nullptr,
         1, &barrier
     );
+    submit();
 }
 
 void VulkanCommand::generateMipMaps(VkImage image, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
@@ -187,9 +192,10 @@ void VulkanCommand::generateMipMaps(VkImage image, int32_t texWidth, int32_t tex
         0, nullptr,
         0, nullptr,
         1, &barrier);
+    submit();
 }
 
-VulkanCommand::~VulkanCommand()
+void VulkanCommand::submit()
 {
     vkEndCommandBuffer(m_commandBuffer);
 
@@ -200,6 +206,9 @@ VulkanCommand::~VulkanCommand()
 
     vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(m_graphicsQueue);
+}
 
+VulkanCommand::~VulkanCommand()
+{
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
 }

@@ -21,51 +21,7 @@
 
 #include <chrono>
 
-struct  Vertex
-{
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 texCoord;
 
-	static VkVertexInputBindingDescription getBindingDescription() {
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(Vertex);
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		return bindingDescription;
-	}
-
-	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
-		attributeDescriptions[0].binding = 0;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
-		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-		attributeDescriptions[2].binding = 0;
-		attributeDescriptions[2].location = 2;
-		attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
-
-		return attributeDescriptions;
-	}
-	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && texCoord == other.texCoord;
-	}
-};
-
-namespace std {
-	template<> struct hash<Vertex> {
-		size_t operator()(Vertex const& vertex) const {
-			return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
-		}
-	};
-}
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -77,11 +33,9 @@ public:
 
 	void init();
 	void run();
-	virtual std::string getWindowTitle() const{ return "Render Toy"; }
-	virtual void prepare();
-	virtual void draw();
-	virtual void buildCommandBuffers();
+
 	void enableValidationLayer() { m_validationLayer = true; };
+
 private:
 	bool checkValidationLayerSupport();
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -89,74 +43,47 @@ private:
 	void pickPhysicalDevice();
 	bool isDeviceSuitable(VkPhysicalDevice device);
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-	VkShaderModule createShaderModule(const std::vector<char>& code);
 
-
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	void drawFrame();
-	void updateUniformBuffer(uint32_t currentImage);
-	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
+
+protected:
+	virtual void createSyncObjects();
+	virtual std::string getWindowTitle() const { return "Render Toy"; }
+	virtual void prepare() {};
+	virtual void draw();
+	virtual void buildCommandBuffers();
+	virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {};
+	virtual void updateUniformBuffer(uint32_t currentImage) {};
+	void createCommandBuffers();
 
 private:
 	void createInstance();
 	void setupDebugMessenger();
 	void createSurface();
-	void createGraphicPipeline();
 
-	void createCommandPool();
-	void createCommandBuffers();
-	void createSyncObjects();
-	void createVertexBuffer();
-	void createindexBuffer();
-	void createDescriptorSetLayout();
-	void createUniformBuffers();
-	void createDescriptorPool();
-	void createDescriptorSets();
-	void createTextureImage();
-	void creteTextureSampler();
-	void loadModel();
+protected:
+	VulkanDevice *m_vulkanDevice;
+	std::vector<VkCommandBuffer> m_commandBuffers;
+	VulkanSwapchain *m_swapchain;
+
+	std::vector<VkSemaphore> m_imageAvailableSemaphores;
+	std::vector<VkSemaphore> m_renderFinishedSemaphores;
+	std::vector<VkFence> m_inFlightFences;
 private:
-	VulkanDevice m_vulkanDevice;
-	VulkanSwapchain m_swapchain;
 
 	VkInstance m_instance = nullptr;
 	VkSurfaceKHR m_surface = nullptr;
 	VkPhysicalDevice m_physicalDevice = nullptr;
 	VkDebugUtilsMessengerEXT m_debugMessenger;
-	VkQueue m_graphicsQueue = nullptr;
 
-	VkPipeline m_graphicsPipeline;
-	VkPipelineLayout m_graphicsPipelineLayout;
-
-	std::vector<VkCommandBuffer> m_commandBuffers;
-	std::vector<VkSemaphore> m_imageAvailableSemaphores;
-	std::vector<VkSemaphore> m_renderFinishedSemaphores;
-	std::vector<VkFence> m_inFlightFences;
-	uint32_t m_currentFrame = 0;
-
-
-
-	VkDescriptorSetLayout m_descriptorSetLayout;
-	std::vector<VulkanBuffer> m_uniformBuffers;
-
-	VkDescriptorPool m_descriptorPool;
-	std::vector<VkDescriptorSet> m_descriptorSets;
-
-	
-	VulkanImage m_textureImage;
-	VkSampler m_textureSampler;
-
-	VulkanBuffer m_indexBuffer;
-	VulkanBuffer m_vertexBuffer;
-
-	std::vector<Vertex> m_vertices;
-	std::vector<uint32_t> m_indices;
-
-	uint32_t m_mipLevels = 1;
 	MainWindow m_mainWindow;
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_preTimePoint;
 	uint32_t m_frameCount = 0;
 	bool m_validationLayer = true;
+
+protected:
+	VkQueue m_graphicsQueue = nullptr;
+	uint32_t m_currentFrame = 0;
+	uint32_t m_mipLevels = 1;
 };
 

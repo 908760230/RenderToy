@@ -70,29 +70,44 @@ void VulkanSwapchain::createSwapChain(VulkanDevice* device)
     }
 
     vkGetSwapchainImagesKHR(device->logicalDevice(), m_swapchain, &imageCount, nullptr);
-    std::vector<VkImage> swapchainImages;
-    swapchainImages.resize(imageCount);
     m_swapchainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(device->logicalDevice(), m_swapchain, &imageCount, swapchainImages.data());
+    m_swapchainImageViews.resize(imageCount);
+    vkGetSwapchainImagesKHR(device->logicalDevice(), m_swapchain, &imageCount, m_swapchainImages.data());
 
-    for (size_t i = 0; i < swapchainImages.size(); i++) {
-        m_swapchainImages[i].setVulkanDevice(m_vulkanDevice);
-        m_swapchainImages[i].createImage(swapchainImages[i], m_swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    for (size_t i = 0; i < m_swapchainImages.size(); i++) {
+        VkImageViewCreateInfo viewInfo{};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = m_swapchainImages[i];
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format = m_swapchainImageFormat;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = 0;
+        viewInfo.subresourceRange.layerCount = 1;
+
+        if (vkCreateImageView(device->logicalDevice(), &viewInfo, nullptr, &m_swapchainImageViews[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create image view!");
+        }
     }
 
 }
 
 void VulkanSwapchain::clear()
 {
-    m_depthImage = VulkanImage();
-    m_sampleImage = VulkanImage();
 
     for (auto framebuffer : m_swapchainFramebuffers) {
         vkDestroyFramebuffer(m_vulkanDevice->logicalDevice(), framebuffer, nullptr);
     }
-    for (auto image : m_swapchainImages) {
-        image = VulkanImage();
+    if (m_depthImage) {
+        delete m_depthImage;
+        m_depthImage = nullptr;
     }
+    if (m_sampleImage) {
+        delete m_sampleImage;
+        m_sampleImage = nullptr;
+    }
+    for (auto imageView : m_swapchainImageViews) vkDestroyImageView(m_vulkanDevice->logicalDevice(), imageView, nullptr);
     vkDestroyRenderPass(m_vulkanDevice->logicalDevice(), m_renderPass, nullptr);
     vkDestroySwapchainKHR(m_vulkanDevice->logicalDevice(), m_swapchain, nullptr);
 }
@@ -208,9 +223,9 @@ void VulkanSwapchain::createFrameBuffers()
 
     for (size_t i = 0; i < m_swapchainImages.size(); i++) {
         std::vector<VkImageView> attachments = {
-            m_sampleImage.imageView(),
-            m_depthImage.imageView(),
-            m_swapchainImages[i].imageView(),
+            m_sampleImage->imageView(),
+            m_depthImage->imageView(),
+            m_swapchainImageViews[i],
         };
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -230,15 +245,15 @@ void VulkanSwapchain::createFrameBuffers()
 
 void VulkanSwapchain::createSampleImage()
 {
-    m_sampleImage = VulkanImage(m_vulkanDevice);
-    m_sampleImage.createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, m_vulkanDevice->maxUsableSampleCount(), m_swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL,
+    m_sampleImage = new VulkanImage(m_vulkanDevice);
+    m_sampleImage->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, m_vulkanDevice->maxUsableSampleCount(), m_swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 }
 
 void VulkanSwapchain::createDepthImage()
 {
-    m_depthImage = VulkanImage(m_vulkanDevice);
-    m_depthImage.createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, m_vulkanDevice->maxUsableSampleCount(), m_vulkanDevice->findDepthFormat(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    m_depthImage = new VulkanImage(m_vulkanDevice);
+    m_depthImage->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, m_vulkanDevice->maxUsableSampleCount(), m_vulkanDevice->findDepthFormat(), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 SwapChainSupportDetails VulkanSwapchain::querySwapChainSupport(VulkanDevice *device)

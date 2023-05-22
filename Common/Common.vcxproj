@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="Engine.h" />
     <ClInclude Include="MainWindow.h" />
+    <ClInclude Include="VulkanShader.h" />
     <ClInclude Include="tiny_obj_loader.h" />
     <ClInclude Include="UniformObject.h" />
     <ClInclude Include="VulkanBuffer.h" />
@@ -32,6 +33,7 @@
   <ItemGroup>
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="VulkanShader.cpp" />
     <ClCompile Include="VulkanBuffer.cpp" />
     <ClCompile Include="VulkanCommand.cpp" />
     <ClCompile Include="VulkanDevice.cpp" />

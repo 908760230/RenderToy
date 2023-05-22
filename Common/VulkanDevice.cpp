@@ -16,6 +16,7 @@ VulkanDevice::VulkanDevice()
 
 VulkanDevice::~VulkanDevice()
 {
+    if (m_commandPool) vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
     if(m_logicalDevice) vkDestroyDevice(m_logicalDevice, nullptr);
 }
 

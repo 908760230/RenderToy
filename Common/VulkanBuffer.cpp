@@ -22,6 +22,12 @@ void VulkanBuffer::createBuffer(void* source, size_t size,VkBufferUsageFlags usa
     copyBuffer(stagingBuffer);
 }
 
+void VulkanBuffer::createBufferWithoutCopy(void* data, size_t size)
+{
+    createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    mapMemory(data);
+}
+
 void VulkanBuffer::createUniformBuffer(size_t size)
 {
     createBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -75,6 +81,12 @@ void VulkanBuffer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
 
 void VulkanBuffer::clear()
 {
-    if (!m_buffer) vkDestroyBuffer(m_vulkanDevice->logicalDevice(), m_buffer, nullptr);
-    if (!m_bufferMemory) vkFreeMemory(m_vulkanDevice->logicalDevice(), m_bufferMemory, nullptr);
+    if (m_buffer) {
+        vkDestroyBuffer(m_vulkanDevice->logicalDevice(), m_buffer, nullptr);
+        m_buffer = nullptr;
+    }
+    if (m_bufferMemory) {
+        vkFreeMemory(m_vulkanDevice->logicalDevice(), m_bufferMemory, nullptr);
+        m_bufferMemory = nullptr;
+    }
 }

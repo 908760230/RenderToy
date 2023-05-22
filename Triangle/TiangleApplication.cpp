@@ -1,40 +1,36 @@
-#include "Application.h"
-#include "UniformObject.h"
+#include "TiangleApplication.h"
 #include "VulkanShader.h"
+#include "UniformObject.h"
 
+std::vector<Vertex> vertices = {
+    {{-0.5f, -0.5f,0}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f,0}, {0.0f, 1.0f, 0.0f}},
+    {{0.0f, 0.5f,0}, {0.0f, 0.0f, 1.0f}}
+};
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+std::vector<uint16_t> indices = {
+    0, 1, 2
+};
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
-
-Application::Application()
+void TiangleApplication::prepare()
 {
-}
+    m_vertexBuffer.setVulkanDevice(m_vulkanDevice);
+    m_vertexBuffer.createBuffer(vertices.data(), vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-Application::~Application()
-{
-    if (m_textureImage) delete m_textureImage;
-    vkDestroySampler(m_vulkanDevice->logicalDevice(), m_textureSampler, nullptr);
-    vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice(), m_descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice(), m_descriptorSetLayout, nullptr);
+    m_indexBuffer.setVulkanDevice(m_vulkanDevice);
+    m_indexBuffer.createBuffer(indices.data(), sizeof(indices[0]) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
-    vkDestroyPipeline(m_vulkanDevice->logicalDevice(), m_graphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice(), m_graphicsPipelineLayout, nullptr);
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-}
+    m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
-void Application::prepare()
-{
+    for (size_t index = 0; index < MAX_FRAMES_IN_FLIGHT; index++) {
+        m_uniformBuffers[index].setVulkanDevice(m_vulkanDevice);
+        m_uniformBuffers[index].createUniformBuffer(bufferSize);
+    }
+
     createDescriptorSetLayout();
     createGraphicPipeline();
-    createTextureImage();
-    creteTextureSampler();
-    loadModel();
-    createVertexBuffer();
-    createindexBuffer();
-    createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
     createCommandBuffers();
@@ -42,8 +38,25 @@ void Application::prepare()
     buildCommandBuffers();
 }
 
+void TiangleApplication::createDescriptorSetLayout()
+{
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-void Application::createGraphicPipeline()
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(m_vulkanDevice->logicalDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+}
+
+void TiangleApplication::createGraphicPipeline()
 {
     VulkanShader vertShder(m_vulkanDevice, "vert.spv");
     VulkanShader fragShder(m_vulkanDevice, "frag.spv");
@@ -161,68 +174,13 @@ void Application::createGraphicPipeline()
     if (vkCreateGraphicsPipelines(m_vulkanDevice->logicalDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
-
 }
 
-void Application::createVertexBuffer()
+void TiangleApplication::createDescriptorPool()
 {
-    m_vertexBuffer.setVulkanDevice(m_vulkanDevice);
-    m_vertexBuffer.createBuffer(m_vertices.data(), m_vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-}
-
-void Application::createindexBuffer()
-{
-    m_indexBuffer.setVulkanDevice(m_vulkanDevice);
-    m_indexBuffer.createBuffer(m_indices.data(), sizeof(m_indices[0]) * m_indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-}
-
-void Application::createDescriptorSetLayout()
-{
-    VkDescriptorSetLayoutBinding uboLayoutBinding{};
-    uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBinding.descriptorCount = 1;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-    samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = 1;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
-
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = bindings.size();
-    layoutInfo.pBindings = bindings.data();
-
-    if (vkCreateDescriptorSetLayout(m_vulkanDevice->logicalDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
-}
-
-void Application::createUniformBuffers()
-{
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-    m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-
-    for (size_t index = 0; index < MAX_FRAMES_IN_FLIGHT; index++) {
-        m_uniformBuffers[index].setVulkanDevice(m_vulkanDevice);
-        m_uniformBuffers[index].createUniformBuffer(bufferSize);
-    }
-}
-
-void Application::createDescriptorPool()
-{
-    std::array<VkDescriptorPoolSize, 2> poolSizes{};
+    std::array<VkDescriptorPoolSize, 1> poolSizes{};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -235,7 +193,7 @@ void Application::createDescriptorPool()
     }
 }
 
-void Application::createDescriptorSets()
+void TiangleApplication::createDescriptorSets()
 {
     std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
 
@@ -258,10 +216,8 @@ void Application::createDescriptorSets()
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = m_textureImage->imageView();
-        imageInfo.sampler = m_textureSampler;
 
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = m_descriptorSets[i];
         descriptorWrites[0].dstBinding = 0;
@@ -270,111 +226,11 @@ void Application::createDescriptorSets()
         descriptorWrites[0].descriptorCount = 1;
         descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = m_descriptorSets[i];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo = &imageInfo;
-
         vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice(), descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
     }
 }
 
-void Application::createTextureImage()
-{
-    int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("viking_room.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-    m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
-    VulkanBuffer stagingBuffer(m_vulkanDevice);
-    stagingBuffer.createBufferWithoutCopy(pixels, imageSize);
-
-    stbi_image_free(pixels);
-
-    m_textureImage = new VulkanImage(m_vulkanDevice);
-    m_textureImage->createImage(texWidth, texHeight, m_mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-
-    VulkanCommand command(m_vulkanDevice);
-    command.transitionImageLayout(m_textureImage->image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
-    VulkanCommand copyCommand(m_vulkanDevice);
-    copyCommand.copyBufferToImage(stagingBuffer.buffer(), m_textureImage->image(), static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-
-    m_textureImage->generateMipMaps(VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
-}
-
-void Application::creteTextureSampler()
-{
-    VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(m_vulkanDevice->physicalDevice(), &properties);
-
-    VkSamplerCreateInfo samplerInfo{};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.minLod = 0;
-    samplerInfo.maxLod = m_mipLevels;
-    samplerInfo.mipLodBias = 0;
-
-    if (vkCreateSampler(m_vulkanDevice->logicalDevice(), &samplerInfo, nullptr, &m_textureSampler) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
-}
-
-void Application::loadModel() {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
-
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "viking_room.obj")) {
-        throw std::runtime_error(warn + err);
-    }
-    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-    for (const auto& shape : shapes) {
-        for (const auto& index : shape.mesh.indices) {
-            Vertex vertex{};
-
-            vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]
-            };
-
-            vertex.texCoord = {
-                attrib.texcoords[2 * index.texcoord_index + 0],
-                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-            };
-
-            vertex.color = { 1.0f, 1.0f, 1.0f };
-
-            if (uniqueVertices.count(vertex) == 0) {
-                uniqueVertices[vertex] = static_cast<uint32_t>(m_vertices.size());
-                m_vertices.push_back(vertex);
-            }
-
-            m_indices.push_back(uniqueVertices[vertex]);
-        }
-    }
-}
-
-void Application::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void TiangleApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -418,9 +274,9 @@ void Application::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
     VkBuffer vertexBuffers[] = { m_vertexBuffer.buffer() };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelineLayout, 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
-    vkCmdDrawIndexed(commandBuffer, m_indices.size(), 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -429,7 +285,7 @@ void Application::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
     }
 }
 
-void Application::updateUniformBuffer(uint32_t currentImage)
+void TiangleApplication::updateUniformBuffer(uint32_t imageIndex)
 {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -442,7 +298,6 @@ void Application::updateUniformBuffer(uint32_t currentImage)
     ubo.proj = glm::perspective(glm::radians(45.0f), extent2D.width / (float)extent2D.height, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
 
-    memcpy(m_uniformBuffers[currentImage].data(), &ubo, sizeof(ubo));
+    memcpy(m_uniformBuffers[imageIndex].data(), &ubo, sizeof(ubo));
 }
-
 

@@ -9,6 +9,7 @@ public:
 	~VulkanBuffer();
 	void setVulkanDevice(VulkanDevice* device) { m_vulkanDevice = device; }
 	void createBuffer(void* data, size_t size, VkBufferUsageFlags usage = 0);
+	void createBufferWithoutCopy(void* data, size_t size);
 	void createUniformBuffer(size_t size);
 	void mapMemory(void *source, bool unMap = true);
 	VkBuffer buffer() const { return m_buffer; }

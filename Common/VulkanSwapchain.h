@@ -32,14 +32,15 @@ private:
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 private:
-	VulkanImage m_depthImage;
-	VulkanImage m_sampleImage;
+	VulkanImage *m_depthImage = nullptr;
+	VulkanImage *m_sampleImage = nullptr;
 	VulkanDevice* m_vulkanDevice = nullptr;
 	VkSwapchainKHR m_swapchain = nullptr;
 	VkExtent2D m_swapchainExtent{};
 	VkFormat m_swapchainImageFormat = VK_FORMAT_UNDEFINED;
 
-	std::vector<VulkanImage> m_swapchainImages;
+	std::vector<VkImage> m_swapchainImages;
+	std::vector<VkImageView> m_swapchainImageViews;
 	std::vector<VkFramebuffer> m_swapchainFramebuffers;
 
 	VkRenderPass m_renderPass = nullptr;
