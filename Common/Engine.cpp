@@ -86,8 +86,6 @@ Engine::~Engine()
         vkDestroyFence(m_vulkanDevice.logicalDevice(), m_inFlightFences[i], nullptr);
     }
 
-    vkDestroyCommandPool(m_vulkanDevice.logicalDevice(), m_commandPool, nullptr);
-
     if(m_validationLayer) DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
     vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
     vkDestroyInstance(m_instance, nullptr);
@@ -598,21 +596,6 @@ void Engine::createGraphicPipeline()
 
     vkDestroyShaderModule(m_vulkanDevice.logicalDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(m_vulkanDevice.logicalDevice(), vertShaderModule, nullptr);
-}
-
-
-void Engine::createCommandPool()
-{
-    QueueFamilyIndices queueFamilyIndices = m_vulkanDevice.findQueueFamilies(m_physicalDevice,m_surface);
-
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
-    if (vkCreateCommandPool(m_vulkanDevice.logicalDevice(), &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create command pool!");
-    }
 }
 
 void Engine::createCommandBuffers()
