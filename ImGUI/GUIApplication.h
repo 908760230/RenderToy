@@ -1,4 +1,5 @@
 #pragma once
+
 #include <Engine.h>
 #include "UIClass.h"
 
@@ -15,13 +16,21 @@ public:
 
 protected:
 	void createGraphicPipeline();
+	void createDescriptorSetLayout();
+	void createDescriptorPool();
+	void createDescriptorSets();
+	void updateUniformBuffer(uint32_t imageIndex) override;
 
 private:
 	UIClass* m_ui = nullptr;
+	VkDescriptorSetLayout m_descriptorSetLayout;
 	VkPipelineLayout m_graphicsPipelineLayout;
 	VkPipeline m_graphicsPipeline;
+	VkDescriptorPool m_descriptorPool;
 
 	VulkanBuffer m_vertexBuffer;
 	VulkanBuffer m_indexBuffer;
+	std::vector<VulkanBuffer> m_uniformBuffers;
+	std::vector<VkDescriptorSet> m_descriptorSets;
 };
 

@@ -20,9 +20,7 @@
 #include "VulkanCommand.h"
 
 #include <chrono>
-
-
-const int MAX_FRAMES_IN_FLIGHT = 2;
+extern int MAX_FRAMES_IN_FLIGHT;
 
 class Engine
 {
@@ -79,7 +77,7 @@ private:
 	VkDebugUtilsMessengerEXT m_debugMessenger;
 
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_preTimePoint;
-	bool m_validationLayer = false;
+	bool m_validationLayer = true;
 
 protected:
 	VkQueue m_graphicsQueue = nullptr;

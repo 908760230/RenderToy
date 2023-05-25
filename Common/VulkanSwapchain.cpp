@@ -1,4 +1,5 @@
 #include "VulkanSwapchain.h"
+#include "Engine.h"
 #include <stdexcept>
 
 VulkanSwapchain::VulkanSwapchain()
@@ -36,6 +37,7 @@ void VulkanSwapchain::createSwapChain(VulkanDevice* device)
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
+    MAX_FRAMES_IN_FLIGHT = imageCount;
 
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;

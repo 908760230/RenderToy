@@ -8,6 +8,7 @@
 #include <chrono>
 #include <unordered_map>
 
+int MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
