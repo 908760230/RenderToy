@@ -8,6 +8,7 @@ const std::vector<const char*> validationLayers = {
 
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME
 };
 
 VulkanDevice::VulkanDevice()
@@ -37,6 +38,7 @@ void VulkanDevice::createDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR su
     m_physicalDevice = physicalDevice;
     m_surface = surface;
     m_msaa = getMaxUsableSampleCount();
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
     QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice, surface);
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -114,10 +116,6 @@ uint32_t VulkanDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags
     }
 
     throw std::runtime_error("failed to find suitable memory type!");
-}
-
-void VulkanDevice::createCommandPool(VkPhysicalDevice physicalDevice)
-{
 }
 
 QueueFamilyIndices VulkanDevice::findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)

@@ -16,15 +16,19 @@ public:
 	void copyBuffer(const VulkanBuffer& other);
 	VkDeviceSize size() const { return m_bufferSize; }
 	void* data() { return m_data; };
-private:
+	void flushMemory();
+
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
+private:
 	void clear();
+
 private:
 	VulkanDevice* m_vulkanDevice = nullptr;
 	VkBuffer m_buffer = nullptr;
 	VkDeviceMemory m_bufferMemory = nullptr;
 	VkDeviceSize m_bufferSize = 0;
+	VkDeviceSize m_memorySize;
 	void* m_data;
 };
 

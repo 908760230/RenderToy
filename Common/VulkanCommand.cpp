@@ -103,6 +103,10 @@ void VulkanCommand::transitionImageLayout(VkImage image, VkFormat format, VkImag
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     }
+    else if (oldLayout == VK_PIPELINE_STAGE_TRANSFER_BIT && newLayout == VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT) {
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
     else {
         throw std::invalid_argument("unsupported layout transition!");
     }

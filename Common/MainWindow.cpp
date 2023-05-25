@@ -4,14 +4,12 @@
 const char* WINDOW_CLASS_NAME = "WINCLASS1";
 MainWindow* instance;
 
-LRESULT  WindowProc(HWND hwnd,
-	UINT msg,
-	WPARAM wparam,
-	LPARAM lparam) { 
-	// this is the main message handler of the system
+LRESULT  WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) { 
 	PAINTSTRUCT		ps;		// used in WM_PAINT
 	HDC				hdc;	// handle to a device context
-
+	float x = LOWORD(lparam);
+	float y = HIWORD(lparam);
+	MouseInfo mouseInfo;
 	// what is the message 
 	switch (msg)
 	{
@@ -58,10 +56,38 @@ LRESULT  WindowProc(HWND hwnd,
 		int height = rect.bottom - rect.top;
 		break;
 	}
+	case WM_MOUSEMOVE: {
+		mouseInfo.m_mousePos = glm::vec2(x, y);
+		break;
+	}
+	case WM_LBUTTONDOWN: {		
+		mouseInfo.m_mousePos = glm::vec2(x, y);
+		mouseInfo.leftDown = true;
+		break;
+	}
+	case WM_RBUTTONDOWN: {
+		mouseInfo.m_mousePos = glm::vec2(x, y);
+		mouseInfo.rightDown = true;
+		break;
+	}
+	case WM_MBUTTONDOWN: {
+		mouseInfo.m_mousePos = glm::vec2(x, y);
+		mouseInfo.wheelDown = true;
+		break;
+	}
+	case WM_LBUTTONUP:
+		mouseInfo.leftDown = false;
+		break;
+	case WM_RBUTTONUP:
+		mouseInfo.rightDown = false;
+		break;
+	case WM_MBUTTONUP:
+		mouseInfo.wheelDown = false;
+		break;
 	default:break;
 
 	} // end switch
-
+	instance->setMouseInfo(mouseInfo);
 	return (DefWindowProc(hwnd, msg, wparam, lparam));
 }
 

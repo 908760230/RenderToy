@@ -22,7 +22,6 @@
 #include <chrono>
 
 
-
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 class Engine
@@ -34,8 +33,11 @@ public:
 	void init();
 	void run();
 
+	virtual void update() {};
 	void enableValidationLayer() { m_validationLayer = true; };
-
+	VulkanDevice* vulkanDevice() const { return m_vulkanDevice; }
+	virtual std::string getWindowTitle() const { return "Render Toy"; }
+	float frameTimer = 1.0f;
 private:
 	bool checkValidationLayerSupport();
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -48,7 +50,6 @@ private:
 
 protected:
 	virtual void createSyncObjects();
-	virtual std::string getWindowTitle() const { return "Render Toy"; }
 	virtual void prepare() {};
 	virtual void draw();
 	virtual void buildCommandBuffers();
@@ -65,6 +66,7 @@ protected:
 	VulkanDevice *m_vulkanDevice;
 	std::vector<VkCommandBuffer> m_commandBuffers;
 	VulkanSwapchain *m_swapchain;
+	MainWindow m_mainWindow;
 
 	std::vector<VkSemaphore> m_imageAvailableSemaphores;
 	std::vector<VkSemaphore> m_renderFinishedSemaphores;
@@ -76,13 +78,12 @@ private:
 	VkPhysicalDevice m_physicalDevice = nullptr;
 	VkDebugUtilsMessengerEXT m_debugMessenger;
 
-	MainWindow m_mainWindow;
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_preTimePoint;
-	uint32_t m_frameCount = 0;
-	bool m_validationLayer = true;
+	bool m_validationLayer = false;
 
 protected:
 	VkQueue m_graphicsQueue = nullptr;
+	uint32_t m_frameCount = 0;
 	uint32_t m_currentFrame = 0;
 	uint32_t m_mipLevels = 1;
 };

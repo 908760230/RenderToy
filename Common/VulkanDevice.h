@@ -35,8 +35,8 @@ public:
 	VkFormat findDepthFormat();
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
+	VkPhysicalDeviceProperties properties;
 private:
-	void createCommandPool(VkPhysicalDevice physicalDevice);
 	VkSampleCountFlagBits getMaxUsableSampleCount();
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 

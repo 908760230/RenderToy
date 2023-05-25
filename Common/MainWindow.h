@@ -6,6 +6,17 @@
 #include <stdio.h>
 #include <math.h>
 #include <string>
+#include <glm/glm.hpp>
+
+
+struct MouseInfo
+{
+	glm::vec2 m_mousePos{};
+	bool leftDown = false;
+	bool rightDown = false;
+	bool wheelDown = false;
+};
+
 
 class MainWindow
 {
@@ -21,7 +32,8 @@ public:
 	HWND windowHandle() const { return hwnd; }
 	int height() const { return m_height; }
 	int width() const { return m_width; }
-	
+	void setMouseInfo(const MouseInfo &info) { m_mouseInfo = info; };
+	MouseInfo mouseInfo() { return m_mouseInfo; }
 	bool exited = false;
 private:
 	WNDCLASSEX winclass; // this will hold the class we create
@@ -31,4 +43,5 @@ private:
 	int m_height = 600;
 	int m_width = 800;
 	std::string windowTitle;
+	MouseInfo m_mouseInfo;
 };

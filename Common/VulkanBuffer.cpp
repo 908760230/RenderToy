@@ -13,6 +13,7 @@ VulkanBuffer::~VulkanBuffer()
 
 void VulkanBuffer::createBuffer(void* source, size_t size,VkBufferUsageFlags usage)
 {
+    clear();
     VulkanBuffer stagingBuffer(m_vulkanDevice);
 
     stagingBuffer.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -24,19 +25,21 @@ void VulkanBuffer::createBuffer(void* source, size_t size,VkBufferUsageFlags usa
 
 void VulkanBuffer::createBufferWithoutCopy(void* data, size_t size)
 {
+    clear();
     createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     mapMemory(data);
 }
 
 void VulkanBuffer::createUniformBuffer(size_t size)
 {
+    clear();
     createBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     mapMemory(nullptr, false);
 }
 
 void VulkanBuffer::mapMemory(void* source, bool unMap)
 {
-    vkMapMemory(m_vulkanDevice->logicalDevice(), m_bufferMemory, 0, m_bufferSize, 0, &m_data);
+    vkMapMemory(m_vulkanDevice->logicalDevice(), m_bufferMemory, 0, m_memorySize, 0, &m_data);
     if (unMap) {
         memcpy(m_data, source, m_bufferSize);
         vkUnmapMemory(m_vulkanDevice->logicalDevice(), m_bufferMemory);
@@ -67,6 +70,8 @@ void VulkanBuffer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(m_vulkanDevice->logicalDevice(), m_buffer, &memRequirements);
 
+    m_memorySize = memRequirements.size;
+
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
@@ -89,4 +94,13 @@ void VulkanBuffer::clear()
         vkFreeMemory(m_vulkanDevice->logicalDevice(), m_bufferMemory, nullptr);
         m_bufferMemory = nullptr;
     }
+}
+
+void VulkanBuffer::flushMemory() {
+    VkMappedMemoryRange mappedRange = {};
+    mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    mappedRange.memory = m_bufferMemory;
+    mappedRange.offset = 0;
+    mappedRange.size = m_memorySize;
+    vkFlushMappedMemoryRanges(m_vulkanDevice->logicalDevice(), 1, &mappedRange);
 }

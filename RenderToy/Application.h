@@ -75,6 +75,7 @@ private:
 	VkPipelineLayout m_graphicsPipelineLayout;
 
 	VkDescriptorPool m_descriptorPool;
+	VkDescriptorSetLayout m_descriptorSetLayout;
 	std::vector<VkDescriptorSet> m_descriptorSets;
 
 	VulkanImage *m_textureImage;
@@ -86,7 +87,6 @@ private:
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
 
-	VkDescriptorSetLayout m_descriptorSetLayout;
 	std::vector<VulkanBuffer> m_uniformBuffers;
 };
 
