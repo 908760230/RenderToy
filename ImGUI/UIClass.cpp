@@ -353,13 +353,8 @@ void UIClass::newFrame(bool updateFrameGraph)
 	ImGui::SetNextWindowPos(ImVec2(20 , 360 ), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(300 , 200 ), ImGuiCond_FirstUseEver);
 	ImGui::Begin("Example settings");
-	ImGui::Checkbox("Render models", &uiSettings.displayModels);
-	ImGui::Checkbox("Display logos", &uiSettings.displayLogos);
-	ImGui::Checkbox("Display background", &uiSettings.displayBackground);
-	ImGui::Checkbox("Animate light", &uiSettings.animateLight);
-	ImGui::SliderFloat("Light speed", &uiSettings.lightSpeed, 0.1f, 1.0f);
+	ImGui::Checkbox("Display Triangle", &uiSettings.displayTriangle);
 	//ImGui::ShowStyleSelector("UI style");
-
 	if (ImGui::Combo("UI style", &m_selectedStyle, "Vulkan\0Classic\0Dark\0Light\0")) {
 		setStyle(m_selectedStyle);
 	}
@@ -389,6 +384,7 @@ void UIClass::updateBuffers()
 
 	// Vertex buffer
 	if ((m_vertexBuffer.buffer() == VK_NULL_HANDLE) || (m_vertexCount != imDrawData->TotalVtxCount)) {
+		vkDeviceWaitIdle(m_vulkanDevice->logicalDevice());
 		m_vertexBuffer.createBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		m_vertexBuffer.mapMemory(nullptr, false);
 		m_vertexCount = imDrawData->TotalVtxCount;
@@ -396,6 +392,7 @@ void UIClass::updateBuffers()
 
 	//// Index buffer
 	if ((m_indexBuffer.buffer() == VK_NULL_HANDLE) || (m_indexCount < imDrawData->TotalIdxCount)) {
+		vkDeviceWaitIdle(m_vulkanDevice->logicalDevice());
 		m_indexBuffer.createBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		m_indexBuffer.mapMemory(nullptr,false);
 		m_indexCount = imDrawData->TotalIdxCount;

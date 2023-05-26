@@ -22,13 +22,13 @@ public:
 
 private:
 	void clear();
-
+	void unMap();
 private:
 	VulkanDevice* m_vulkanDevice = nullptr;
 	VkBuffer m_buffer = nullptr;
 	VkDeviceMemory m_bufferMemory = nullptr;
 	VkDeviceSize m_bufferSize = 0;
 	VkDeviceSize m_memorySize;
-	void* m_data;
+	void* m_data = nullptr;
 };
 

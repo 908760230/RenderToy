@@ -9,7 +9,7 @@ LRESULT  WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	HDC				hdc;	// handle to a device context
 	float x = LOWORD(lparam);
 	float y = HIWORD(lparam);
-	MouseInfo mouseInfo;
+	MouseInfo& mouseInfo = instance->mouseInfo();
 	// what is the message 
 	switch (msg)
 	{
@@ -87,7 +87,6 @@ LRESULT  WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	default:break;
 
 	} // end switch
-	instance->setMouseInfo(mouseInfo);
 	return (DefWindowProc(hwnd, msg, wparam, lparam));
 }
 

@@ -20,7 +20,8 @@ protected:
 	void createDescriptorPool();
 	void createDescriptorSets();
 	void updateUniformBuffer(uint32_t imageIndex) override;
-
+	void drawFrame() override;
+	std::string getWindowTitle() const override { return "ImGui Demo"; }
 private:
 	UIClass* m_ui = nullptr;
 	VkDescriptorSetLayout m_descriptorSetLayout;

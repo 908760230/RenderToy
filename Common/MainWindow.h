@@ -32,8 +32,7 @@ public:
 	HWND windowHandle() const { return hwnd; }
 	int height() const { return m_height; }
 	int width() const { return m_width; }
-	void setMouseInfo(const MouseInfo &info) { m_mouseInfo = info; };
-	MouseInfo mouseInfo() { return m_mouseInfo; }
+	MouseInfo& mouseInfo() { return m_mouseInfo; }
 	bool exited = false;
 private:
 	WNDCLASSEX winclass; // this will hold the class we create

@@ -76,7 +76,7 @@ void Engine::init()
     m_graphicsQueue = m_vulkanDevice->graphicQueue();
     m_swapchain = new VulkanSwapchain();
     m_swapchain->init(m_vulkanDevice);
-
+    createCommandBuffers();
     prepare();
 }
 
@@ -86,6 +86,7 @@ void Engine::run()
     while (result)
     {
         result = m_mainWindow.processEvent();
+        update();
         if(result) drawFrame();
 
         m_frameCount++;
@@ -101,7 +102,6 @@ void Engine::run()
             m_frameCount = 0;
             m_preTimePoint = currentTime;
         }
-        update();
     }
     m_vulkanDevice->wait();
 }

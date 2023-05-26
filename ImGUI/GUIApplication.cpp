@@ -1,6 +1,7 @@
 #include "GUIApplication.h"
 #include "VulkanShader.h"
 #include "UniformObject.h"
+#include <iostream>
 
 struct  Vertex
 {
@@ -75,9 +76,9 @@ void GUIApplication::update()
 	io.MouseDown[0] = mouseInfo.leftDown;
 	io.MouseDown[1] = mouseInfo.rightDown;
 	io.MouseDown[2] = mouseInfo.wheelDown;
-
-    //m_ui->newFrame(m_frameCount == 0);
-    //m_ui->updateBuffers();
+    if (mouseInfo.leftDown) std::cout << "mouse left down!" << std::endl;
+    if (mouseInfo.rightDown) std::cout << "mouse right down!" << std::endl;
+    if (mouseInfo.wheelDown) std::cout << "mouse wheel down!" << std::endl;
 }
 
 void GUIApplication::prepare()
@@ -105,7 +106,6 @@ void GUIApplication::prepare()
 
 	initGui();
     createSyncObjects();
-    createCommandBuffers();
     buildCommandBuffers();
 }
 
@@ -161,8 +161,9 @@ void GUIApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelineLayout, 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
+    
+    if(uiSettings.displayTriangle)
     vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0, 0);
-
 
     m_ui->newFrame(m_frameCount == 0);
     m_ui->updateBuffers();
@@ -380,4 +381,44 @@ void GUIApplication::updateUniformBuffer(uint32_t imageIndex)
     ubo.proj[1][1] *= -1;
 
     memcpy(m_uniformBuffers[imageIndex].data(), &ubo, sizeof(ubo));
+}
+
+void GUIApplication::drawFrame()
+{
+    m_swapchain->beginFrame(m_commandBuffers[m_currentFrame], m_imageAvailableSemaphores[m_currentFrame]);
+
+    vkWaitForFences(m_vulkanDevice->logicalDevice(), 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(m_vulkanDevice->logicalDevice(), 1, &m_inFlightFences[m_currentFrame]);
+
+    updateUniformBuffer(m_currentFrame);
+    recordCommandBuffer(m_commandBuffers[m_currentFrame], m_currentFrame);
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore waitSemaphores[] = { m_imageAvailableSemaphores[m_currentFrame] };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &m_commandBuffers[m_currentFrame];
+
+    VkSemaphore signalSemaphores[] = { m_renderFinishedSemaphores[m_currentFrame] };
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
+    auto result = m_swapchain->endFrame(&m_renderFinishedSemaphores[m_currentFrame]);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        m_swapchain->recreate();
+        buildCommandBuffers();
+    }
+    else if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to present swap chain image!");
+    }
+    m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }

@@ -33,7 +33,6 @@ void TiangleApplication::prepare()
     createGraphicPipeline();
     createDescriptorPool();
     createDescriptorSets();
-    createCommandBuffers();
     createSyncObjects();
     buildCommandBuffers();
 }

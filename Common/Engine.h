@@ -44,8 +44,6 @@ private:
 	bool isDeviceSuitable(VkPhysicalDevice device);
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
-	void drawFrame();
-
 protected:
 	virtual void createSyncObjects();
 	virtual void prepare() {};
@@ -53,6 +51,7 @@ protected:
 	virtual void buildCommandBuffers();
 	virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {};
 	virtual void updateUniformBuffer(uint32_t currentImage) {};
+	virtual void drawFrame();
 	void createCommandBuffers();
 
 private:

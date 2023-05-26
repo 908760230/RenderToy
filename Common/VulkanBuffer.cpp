@@ -86,6 +86,7 @@ void VulkanBuffer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
 
 void VulkanBuffer::clear()
 {
+    unMap();
     if (m_buffer) {
         vkDestroyBuffer(m_vulkanDevice->logicalDevice(), m_buffer, nullptr);
         m_buffer = nullptr;
@@ -93,6 +94,15 @@ void VulkanBuffer::clear()
     if (m_bufferMemory) {
         vkFreeMemory(m_vulkanDevice->logicalDevice(), m_bufferMemory, nullptr);
         m_bufferMemory = nullptr;
+    }
+}
+
+void VulkanBuffer::unMap()
+{
+    if (m_data)
+    {
+        vkUnmapMemory(m_vulkanDevice->logicalDevice(), m_bufferMemory);
+        m_data = nullptr;
     }
 }
 

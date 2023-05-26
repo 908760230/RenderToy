@@ -9,11 +9,7 @@
 
 struct UISetting
 {
-	bool displayModels = true;
-	bool displayLogos = true;
-	bool displayBackground = true;
-	bool animateLight = false;
-	float lightSpeed = 0.25f;
+	bool displayTriangle = true;
 	std::array<float, 50> frameTimes{};
 	float frameTimeMin = 999.f;
 	float frameTimeMax = 0;

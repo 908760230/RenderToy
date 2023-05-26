@@ -37,7 +37,6 @@ void Application::prepare()
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
-    createCommandBuffers();
     createSyncObjects();
     buildCommandBuffers();
 }
