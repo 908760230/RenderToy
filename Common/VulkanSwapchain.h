@@ -23,6 +23,7 @@ public:
 	SwapChainSupportDetails querySwapChainSupport(VulkanDevice* device);
 	VkRenderPass renderPass() const { return m_renderPass; }
 	VkFramebuffer frameBuffer(uint32_t index) { return m_swapchainFramebuffers[index]; }
+	std::vector<VkFramebuffer> frameBuffers() const { return m_swapchainFramebuffers; }
 private:
 	void createRenderPass();
 	void createFrameBuffers();
