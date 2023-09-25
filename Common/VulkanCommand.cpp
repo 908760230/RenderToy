@@ -1,11 +1,11 @@
 #include "VulkanCommand.h"
 #include <stdexcept>
 
-VulkanCommand::VulkanCommand(VulkanDevice* vulkanDevice)
+VulkanCommand::VulkanCommand(VulkanDevice &vulkanDevice)
 {
-    m_commandPool = vulkanDevice->commandPool();
-    m_graphicsQueue = vulkanDevice->graphicQueue();
-    m_logicalDevice = vulkanDevice->logicalDevice();
+    m_commandPool = vulkanDevice.commandPool();
+    m_graphicsQueue = vulkanDevice.graphicQueue();
+    m_logicalDevice = vulkanDevice.logicalDevice();
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

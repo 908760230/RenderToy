@@ -14,19 +14,30 @@ std::vector<uint16_t> indices = {
 
 void TiangleApplication::prepare()
 {
-    m_vertexBuffer.setVulkanDevice(m_vulkanDevice);
-    m_vertexBuffer.createBuffer(vertices.data(), vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    {
+        VulkanBuffer stagingBuffer(*m_vulkanDevice, vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        stagingBuffer.mapMemory();
+        stagingBuffer.update(vertices.data());
 
-    m_indexBuffer.setVulkanDevice(m_vulkanDevice);
-    m_indexBuffer.createBuffer(indices.data(), sizeof(indices[0]) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+        m_vertexBuffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice, vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        m_vertexBuffer->copyBuffer(stagingBuffer);
+    }
 
+    VulkanBuffer stagingBuffer(*m_vulkanDevice, indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    stagingBuffer.mapMemory();
+    stagingBuffer.update(indices.data());
+
+    m_indexBuffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice, indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    m_indexBuffer->copyBuffer(stagingBuffer);
+
+   
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
     m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t index = 0; index < MAX_FRAMES_IN_FLIGHT; index++) {
-        m_uniformBuffers[index].setVulkanDevice(m_vulkanDevice);
-        m_uniformBuffers[index].createUniformBuffer(bufferSize);
+        m_uniformBuffers[index] = std::make_shared<VulkanBuffer>(*m_vulkanDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        m_uniformBuffers[index]->mapMemory();
     }
 
     createDescriptorSetLayout();
@@ -57,8 +68,8 @@ void TiangleApplication::createDescriptorSetLayout()
 
 void TiangleApplication::createGraphicPipeline()
 {
-    VulkanShader vertShder(m_vulkanDevice, "vert.spv");
-    VulkanShader fragShder(m_vulkanDevice, "frag.spv");
+    VulkanShader vertShder(m_vulkanDevice, "../../Triangle/vert.spv");
+    VulkanShader fragShder(m_vulkanDevice, "../../Triangle/frag.spv");
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -164,7 +175,7 @@ void TiangleApplication::createGraphicPipeline()
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = m_graphicsPipelineLayout;
-    pipelineInfo.renderPass = m_swapchain->renderPass();
+    pipelineInfo.renderPass = m_renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDepthStencilState = &depthStencil;
@@ -208,7 +219,7 @@ void TiangleApplication::createDescriptorSets()
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_uniformBuffers[i].buffer();
+        bufferInfo.buffer = m_uniformBuffers[i]->buffer();
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -239,8 +250,8 @@ void TiangleApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_swapchain->renderPass();
-    renderPassInfo.framebuffer = m_swapchain->frameBuffer(imageIndex);
+    renderPassInfo.renderPass = m_renderPass;
+    renderPassInfo.framebuffer = m_framebuffers[imageIndex];
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = m_swapchain->extend2D();
 
@@ -269,10 +280,10 @@ void TiangleApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint
     scissor.extent = m_swapchain->extend2D();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = { m_vertexBuffer.buffer() };
+    VkBuffer vertexBuffers[] = { m_vertexBuffer->buffer() };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT16);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelineLayout, 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
     vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0, 0);
 
@@ -296,6 +307,6 @@ void TiangleApplication::updateUniformBuffer(uint32_t imageIndex)
     ubo.proj = glm::perspective(glm::radians(45.0f), extent2D.width / (float)extent2D.height, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
 
-    memcpy(m_uniformBuffers[imageIndex].data(), &ubo, sizeof(ubo));
+    memcpy(m_uniformBuffers[imageIndex]->data(), &ubo, sizeof(ubo));
 }
 

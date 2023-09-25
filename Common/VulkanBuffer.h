@@ -5,30 +5,28 @@
 class VulkanBuffer
 {
 public:
-	VulkanBuffer(VulkanDevice* m_vulkanDevice = nullptr);
+	VulkanBuffer(VulkanDevice &m_vulkanDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 	~VulkanBuffer();
-	void setVulkanDevice(VulkanDevice* device) { m_vulkanDevice = device; }
-	void createBuffer(void* data, size_t size, VkBufferUsageFlags usage = 0);
-	void createBufferWithoutCopy(void* data, size_t size);
-	void createUniformBuffer(size_t size);
-	void mapMemory(void *source, bool unMap = true);
+	void mapMemory();
 	VkBuffer buffer() const { return m_buffer; }
 	void copyBuffer(const VulkanBuffer& other);
 	VkDeviceSize size() const { return m_bufferSize; }
 	void* data() { return m_data; };
+	void update(void* source);
 	void flushMemory();
 
-	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
-
 private:
+
 	void clear();
 	void unMap();
 private:
-	VulkanDevice* m_vulkanDevice = nullptr;
+	VulkanDevice &m_vulkanDevice;
 	VkBuffer m_buffer = nullptr;
 	VkDeviceMemory m_bufferMemory = nullptr;
 	VkDeviceSize m_bufferSize = 0;
 	VkDeviceSize m_memorySize;
+	VkBufferUsageFlags m_usage{};
+	bool m_mapped = false;
 	void* m_data = nullptr;
 };
 

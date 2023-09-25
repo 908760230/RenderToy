@@ -72,7 +72,7 @@ void VulkanImage::generateMipMaps(VkFormat imageFormat, int32_t texWidth, int32_
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
-    VulkanCommand command(m_vulkanDevice);
+    VulkanCommand command(*m_vulkanDevice);
     command.generateMipMaps(m_image, texWidth, texHeight, mipLevels);
 }
 

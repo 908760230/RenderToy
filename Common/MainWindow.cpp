@@ -54,6 +54,7 @@ LRESULT  WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 		GetWindowRect(hwnd, &rect);
 		int width = rect.right - rect.left;
 		int height = rect.bottom - rect.top;
+		instance->resize(width, height);
 		break;
 	}
 	case WM_MOUSEMOVE: {

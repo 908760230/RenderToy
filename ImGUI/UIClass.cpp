@@ -9,8 +9,6 @@ UIClass::UIClass(Engine* engine)
 {
 	m_engine = engine;
 	m_vulkanDevice = engine->vulkanDevice();
-	m_vertexBuffer.setVulkanDevice(m_vulkanDevice);
-	m_indexBuffer.setVulkanDevice(m_vulkanDevice);
 
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
@@ -27,6 +25,7 @@ UIClass::~UIClass()
 	vkDestroyPipelineCache(m_vulkanDevice->logicalDevice(), m_pipelineCache, nullptr);
 	vkDestroyPipeline(m_vulkanDevice->logicalDevice(), m_pipeline, nullptr);
 	vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice(), m_pipelineLayout, nullptr);
+	vkFreeDescriptorSets(m_vulkanDevice->logicalDevice(), m_descriptorPool, 1, &m_descriptorSet);
 	vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice(), m_descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice(), m_descriptorSetLayout, nullptr);
 }
@@ -95,19 +94,20 @@ void UIClass::initResources(VkRenderPass renderPass)
 	m_driverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
 	vkGetPhysicalDeviceProperties2(m_vulkanDevice->physicalDevice(), &deviceProperties2);
 
-	VulkanBuffer stagingBuffer(m_vulkanDevice);
-	stagingBuffer.createBufferWithoutCopy(fontData, uploadSize);
+	VulkanBuffer stagingBuffer(*m_vulkanDevice, uploadSize,VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	stagingBuffer.mapMemory();
+	stagingBuffer.update(fontData);
 
 	m_fontImage.createImage((uint32_t)texWidth, (uint32_t)texHeight, 1, VK_SAMPLE_COUNT_1_BIT,
 		VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
-	VulkanCommand command(m_vulkanDevice);
+	VulkanCommand command(*m_vulkanDevice);
 	command.transitionImageLayout(m_fontImage.image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
-	VulkanCommand copyCommand(m_vulkanDevice);
+	VulkanCommand copyCommand(*m_vulkanDevice);
 	copyCommand.copyBufferToImage(stagingBuffer.buffer(), m_fontImage.image(), texWidth, texHeight);
 
-	VulkanCommand transitionCommand(m_vulkanDevice);
+	VulkanCommand transitionCommand(*m_vulkanDevice);
 	transitionCommand.transitionImageLayout(m_fontImage.image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
 
 	VkSamplerCreateInfo samplerInfo{};
@@ -244,8 +244,8 @@ void UIClass::initResources(VkRenderPass renderPass)
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
 	dynamicState.flags = 0; 
 
-	VulkanShader vertShder(m_vulkanDevice, "ui.vert.spv");
-	VulkanShader fragShder(m_vulkanDevice, "ui.frag.spv");
+	VulkanShader vertShder(m_vulkanDevice, "../../ImGUI/ui.vert.spv");
+	VulkanShader fragShder(m_vulkanDevice, "../../ImGUI/ui.frag.spv");
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -383,24 +383,24 @@ void UIClass::updateBuffers()
 	// Update buffers only if vertex or index count has been changed compared to current buffer size
 
 	// Vertex buffer
-	if ((m_vertexBuffer.buffer() == VK_NULL_HANDLE) || (m_vertexCount != imDrawData->TotalVtxCount)) {
+	if (!m_vertexBuffer || (m_vertexCount != imDrawData->TotalVtxCount)) {
 		vkDeviceWaitIdle(m_vulkanDevice->logicalDevice());
-		m_vertexBuffer.createBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-		m_vertexBuffer.mapMemory(nullptr, false);
+		m_vertexBuffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		m_vertexBuffer->mapMemory();
 		m_vertexCount = imDrawData->TotalVtxCount;
 	}
 
 	//// Index buffer
-	if ((m_indexBuffer.buffer() == VK_NULL_HANDLE) || (m_indexCount < imDrawData->TotalIdxCount)) {
+	if (!m_indexBuffer || (m_indexCount < imDrawData->TotalIdxCount)) {
 		vkDeviceWaitIdle(m_vulkanDevice->logicalDevice());
-		m_indexBuffer.createBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-		m_indexBuffer.mapMemory(nullptr,false);
+		m_indexBuffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice, indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		m_indexBuffer->mapMemory();
 		m_indexCount = imDrawData->TotalIdxCount;
 	}
 
 	// Upload data
-	ImDrawVert* vtxDst = (ImDrawVert*)m_vertexBuffer.data();
-	ImDrawIdx* idxDst = (ImDrawIdx*)m_indexBuffer.data();
+	ImDrawVert* vtxDst = (ImDrawVert*)m_vertexBuffer->data();
+	ImDrawIdx* idxDst = (ImDrawIdx*)m_indexBuffer->data();
 
 	for (int n = 0; n < imDrawData->CmdListsCount; n++) {
 		const ImDrawList* cmd_list = imDrawData->CmdLists[n];
@@ -411,8 +411,8 @@ void UIClass::updateBuffers()
 	}
 
 	// Flush to make writes visible to GPU
-	m_vertexBuffer.flushMemory();
-	m_indexBuffer.flushMemory();
+	m_vertexBuffer->flushMemory();
+	m_indexBuffer->flushMemory();
 }
 
 void UIClass::drawFrame(VkCommandBuffer commandBuffer)
@@ -442,9 +442,9 @@ void UIClass::drawFrame(VkCommandBuffer commandBuffer)
 	if (imDrawData->CmdListsCount > 0) {
 
 		VkDeviceSize offsets[1] = { 0 };
-		VkBuffer buffer = m_vertexBuffer.buffer();
+		VkBuffer buffer = m_vertexBuffer->buffer();
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &buffer, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT16);
 
 		for (int32_t i = 0; i < imDrawData->CmdListsCount; i++)
 		{

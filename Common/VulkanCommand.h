@@ -6,7 +6,7 @@
 class VulkanCommand
 {
 public:
-	VulkanCommand(VulkanDevice *vulkanDevice);
+	VulkanCommand(VulkanDevice &vulkanDevice);
 	~VulkanCommand();
 
 	void copyBuffer(const VulkanBuffer& srcBuffer, const VulkanBuffer& dstBuffer);

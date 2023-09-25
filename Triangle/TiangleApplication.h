@@ -63,9 +63,9 @@ private:
 	VkPipeline m_graphicsPipeline;
 	VkDescriptorPool m_descriptorPool;
 
-	VulkanBuffer m_vertexBuffer;
-	VulkanBuffer m_indexBuffer;
-	std::vector<VulkanBuffer> m_uniformBuffers;
+	std::shared_ptr<VulkanBuffer> m_vertexBuffer;
+	std::shared_ptr<VulkanBuffer> m_indexBuffer;
+	std::vector<std::shared_ptr<VulkanBuffer>> m_uniformBuffers;
 	std::vector<VkDescriptorSet> m_descriptorSets;
 
 };

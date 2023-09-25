@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <Engine.h>
 
 struct  Vertex
@@ -81,12 +82,12 @@ private:
 	VulkanImage *m_textureImage;
 	VkSampler m_textureSampler;
 
-	VulkanBuffer m_indexBuffer;
-	VulkanBuffer m_vertexBuffer;
+	std::shared_ptr<VulkanBuffer> m_indexBuffer;
+	std::shared_ptr<VulkanBuffer> m_vertexBuffer;
 
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
 
-	std::vector<VulkanBuffer> m_uniformBuffers;
+	std::vector<std::shared_ptr<VulkanBuffer>> m_uniformBuffers;
 };
 

@@ -31,8 +31,8 @@ private:
 	int m_selectedStyle = 0;
 
 	VkSampler m_sampler;
-	VulkanBuffer m_vertexBuffer;
-	VulkanBuffer m_indexBuffer;
+	std::shared_ptr<VulkanBuffer> m_vertexBuffer;
+	std::shared_ptr<VulkanBuffer> m_indexBuffer;
 	VulkanImage m_fontImage;
 	VulkanDevice* m_vulkanDevice;
 

@@ -11,9 +11,8 @@ struct SwapChainSupportDetails {
 class VulkanSwapchain
 {
 public:
-	VulkanSwapchain();
+	VulkanSwapchain(VulkanDevice* device);
 	~VulkanSwapchain();
-	void init(VulkanDevice* device);
 	void createSwapChain(VulkanDevice* device);
 	VkExtent2D extend2D() { return m_swapchainExtent; }
 	void clear();
@@ -21,12 +20,22 @@ public:
 	void beginFrame(VkCommandBuffer commandBuffer, VkSemaphore semaphore);
 	VkResult endFrame( const VkSemaphore* signalSemaphores);
 	SwapChainSupportDetails querySwapChainSupport(VulkanDevice* device);
-	VkRenderPass renderPass() const { return m_renderPass; }
-	VkFramebuffer frameBuffer(uint32_t index) { return m_swapchainFramebuffers[index]; }
-	std::vector<VkFramebuffer> frameBuffers() const { return m_swapchainFramebuffers; }
+	VkFormat GetSwapchainImageFormat() const {
+		return m_swapchainImageFormat;
+	}
+
+	const std::vector<VkImageView> &GetImageViews() const {
+		return m_swapchainImageViews;
+	}
+	const VulkanImage* GetDepthImage() const {
+		return m_depthImage;
+	}
+
+	const VulkanImage* GetSampleImage() const {
+		return m_sampleImage;
+	}
 private:
-	void createRenderPass();
-	void createFrameBuffers();
+
 	void createSampleImage();
 	void createDepthImage();
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -42,9 +51,7 @@ private:
 
 	std::vector<VkImage> m_swapchainImages;
 	std::vector<VkImageView> m_swapchainImageViews;
-	std::vector<VkFramebuffer> m_swapchainFramebuffers;
 
-	VkRenderPass m_renderPass = nullptr;
 	VkQueue m_presentQueue = nullptr;
 	uint32_t m_imageIndex = 0;
 };

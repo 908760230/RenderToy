@@ -20,6 +20,7 @@
 #include "VulkanCommand.h"
 
 #include <chrono>
+#include <memory>
 extern int MAX_FRAMES_IN_FLIGHT;
 
 class Engine
@@ -52,6 +53,9 @@ protected:
 	virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {};
 	virtual void updateUniformBuffer(uint32_t currentImage) {};
 	virtual void drawFrame();
+	virtual void createRenderPass();
+	virtual void createFrameBuffers();
+	virtual void rebuildFrame();
 	void createCommandBuffers();
 
 private:
@@ -83,5 +87,9 @@ protected:
 	uint32_t m_frameCount = 0;
 	uint32_t m_currentFrame = 0;
 	uint32_t m_mipLevels = 1;
+
+	std::vector<VkFramebuffer> m_framebuffers;
+
+	VkRenderPass m_renderPass = nullptr;
 };
 

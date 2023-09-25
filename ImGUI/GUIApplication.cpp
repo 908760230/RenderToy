@@ -64,7 +64,6 @@ GUIApplication::~GUIApplication()
 {
     vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice(), m_graphicsPipelineLayout, nullptr);
     vkDestroyPipeline(m_vulkanDevice->logicalDevice(), m_graphicsPipeline, nullptr);
-	delete m_ui;
 }
 
 void GUIApplication::update()
@@ -76,29 +75,35 @@ void GUIApplication::update()
 	io.MouseDown[0] = mouseInfo.leftDown;
 	io.MouseDown[1] = mouseInfo.rightDown;
 	io.MouseDown[2] = mouseInfo.wheelDown;
-    if (mouseInfo.leftDown) std::cout << "mouse left down!" << std::endl;
-    if (mouseInfo.rightDown) std::cout << "mouse right down!" << std::endl;
-    if (mouseInfo.wheelDown) std::cout << "mouse wheel down!" << std::endl;
 }
 
 void GUIApplication::prepare()
 {
-    //triangle
-    m_vertexBuffer.setVulkanDevice(m_vulkanDevice);
-    m_vertexBuffer.createBuffer(vertices.data(), vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    {
+        VulkanBuffer stagingBuffer(*m_vulkanDevice, vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        stagingBuffer.mapMemory();
+        stagingBuffer.update(vertices.data());
 
-    m_indexBuffer.setVulkanDevice(m_vulkanDevice);
-    m_indexBuffer.createBuffer(indices.data(), sizeof(indices[0]) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    
+        m_vertexBuffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice, vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        m_vertexBuffer->copyBuffer(stagingBuffer);
+    }
+
+    VulkanBuffer stagingBuffer(*m_vulkanDevice, indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    stagingBuffer.mapMemory();
+    stagingBuffer.update(indices.data());
+
+    m_indexBuffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice, indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    m_indexBuffer->copyBuffer(stagingBuffer);
+
+
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
     m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t index = 0; index < MAX_FRAMES_IN_FLIGHT; index++) {
-        m_uniformBuffers[index].setVulkanDevice(m_vulkanDevice);
-        m_uniformBuffers[index].createUniformBuffer(bufferSize);
+        m_uniformBuffers[index] = std::make_shared<VulkanBuffer>(*m_vulkanDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        m_uniformBuffers[index]->mapMemory();
     }
-
     createDescriptorSetLayout();
     createDescriptorPool();
     createDescriptorSets();
@@ -111,9 +116,9 @@ void GUIApplication::prepare()
 
 void GUIApplication::initGui()
 {
-    m_ui = new UIClass(this);
+    m_ui = std::make_shared<UIClass>(this);
 	m_ui->init(m_mainWindow.width(), m_mainWindow.height());
-	m_ui->initResources(m_swapchain->renderPass());
+	m_ui->initResources(m_renderPass);
 }
 
 void GUIApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -127,8 +132,8 @@ void GUIApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_swapchain->renderPass();
-    renderPassInfo.framebuffer = m_swapchain->frameBuffer(imageIndex);
+    renderPassInfo.renderPass = m_renderPass;
+    renderPassInfo.framebuffer = m_framebuffers[imageIndex];
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = m_swapchain->extend2D();
 
@@ -156,10 +161,10 @@ void GUIApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     scissor.extent = m_swapchain->extend2D();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = { m_vertexBuffer.buffer() };
+    VkBuffer vertexBuffers[] = { m_vertexBuffer->buffer() };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT16);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelineLayout, 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
     
     if(uiSettings.displayTriangle)
@@ -196,8 +201,8 @@ void GUIApplication::createDescriptorSetLayout()
 
 void GUIApplication::createGraphicPipeline()
 {
-    VulkanShader vertShder(m_vulkanDevice, "vert.spv");
-    VulkanShader fragShder(m_vulkanDevice, "frag.spv");
+    VulkanShader vertShder(m_vulkanDevice, "../../ImGUI/vert.spv");
+    VulkanShader fragShder(m_vulkanDevice, "../../ImGUI/frag.spv");
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -303,7 +308,7 @@ void GUIApplication::createGraphicPipeline()
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = m_graphicsPipelineLayout;
-    pipelineInfo.renderPass = m_swapchain->renderPass();
+    pipelineInfo.renderPass = m_renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDepthStencilState = &depthStencil;
@@ -347,7 +352,7 @@ void GUIApplication::createDescriptorSets()
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_uniformBuffers[i].buffer();
+        bufferInfo.buffer = m_uniformBuffers[i]->buffer();
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -380,7 +385,7 @@ void GUIApplication::updateUniformBuffer(uint32_t imageIndex)
     ubo.proj = glm::perspective(glm::radians(45.0f), extent2D.width / (float)extent2D.height, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
 
-    memcpy(m_uniformBuffers[imageIndex].data(), &ubo, sizeof(ubo));
+    memcpy(m_uniformBuffers[imageIndex]->data(), &ubo, sizeof(ubo));
 }
 
 void GUIApplication::drawFrame()
@@ -414,11 +419,17 @@ void GUIApplication::drawFrame()
 
     auto result = m_swapchain->endFrame(&m_renderFinishedSemaphores[m_currentFrame]);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        m_swapchain->recreate();
-        buildCommandBuffers();
+        rebuildFrame();
     }
     else if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
     }
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void GUIApplication::rebuildFrame()
+{
+    Engine::rebuildFrame();
+    m_ui->init(m_mainWindow.width(), m_mainWindow.height());
+    m_ui->initResources(m_renderPass);
 }

@@ -52,6 +52,11 @@ Engine::~Engine()
 {
     vkFreeCommandBuffers(m_vulkanDevice->logicalDevice(), m_vulkanDevice->commandPool(), m_commandBuffers.size(), m_commandBuffers.data());
 
+    for (auto framebuffer : m_framebuffers) {
+        vkDestroyFramebuffer(m_vulkanDevice->logicalDevice(), framebuffer, nullptr);
+    }
+    vkDestroyRenderPass(m_vulkanDevice->logicalDevice(), m_renderPass, nullptr);
+
     if (m_swapchain) delete m_swapchain;
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(m_vulkanDevice->logicalDevice(), m_renderFinishedSemaphores[i], nullptr);
@@ -74,8 +79,9 @@ void Engine::init()
     m_vulkanDevice = new VulkanDevice();
     m_vulkanDevice->createDevice(m_physicalDevice, m_surface,m_validationLayer);
     m_graphicsQueue = m_vulkanDevice->graphicQueue();
-    m_swapchain = new VulkanSwapchain();
-    m_swapchain->init(m_vulkanDevice);
+    m_swapchain = new VulkanSwapchain(m_vulkanDevice);
+    createRenderPass();
+    createFrameBuffers();
     createCommandBuffers();
     prepare();
 }
@@ -273,7 +279,7 @@ void Engine::drawFrame()
 
     auto result = m_swapchain->endFrame(&m_renderFinishedSemaphores[m_currentFrame]);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        m_swapchain->recreate();
+        rebuildFrame();
         buildCommandBuffers();
     }else if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
@@ -286,9 +292,9 @@ void Engine::createInstance()
     if(false == checkValidationLayerSupport()) throw std::runtime_error("validation layers requested, but not available!");
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
+    appInfo.pApplicationName = "Application Engine";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
+    appInfo.pEngineName = "Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.apiVersion = VK_API_VERSION_1_0;
 
@@ -346,6 +352,132 @@ void Engine::createCommandBuffers()
 
     if (vkAllocateCommandBuffers(m_vulkanDevice->logicalDevice(), &allocInfo, m_commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
+    }
+}
+
+void Engine::createFrameBuffers()
+{
+    const auto& swapchainImageViews = m_swapchain->GetImageViews();
+    m_framebuffers.resize(swapchainImageViews.size());
+    VkExtent2D swapchainExtent = m_swapchain->extend2D();
+    for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+        std::vector<VkImageView> attachments = {
+            m_swapchain->GetSampleImage()->imageView(),
+            m_swapchain->GetDepthImage()->imageView(),
+            swapchainImageViews[i],
+        };
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = m_renderPass;
+        framebufferInfo.attachmentCount = attachments.size();
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = swapchainExtent.width;
+        framebufferInfo.height = swapchainExtent.height;
+        framebufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(m_vulkanDevice->logicalDevice(), &framebufferInfo, nullptr, &m_framebuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create framebuffer!");
+        }
+    }
+}
+
+void Engine::rebuildFrame()
+{
+    m_swapchain->recreate();
+    if (m_renderPass) {
+        vkDestroyRenderPass(m_vulkanDevice->logicalDevice(), m_renderPass, nullptr);
+    }
+    for (auto framebuffer : m_framebuffers) {
+        if (framebuffer) {
+            vkDestroyFramebuffer(m_vulkanDevice->logicalDevice(), framebuffer, nullptr);
+        }
+    }
+    createRenderPass();
+    createFrameBuffers();
+}
+
+void Engine::createRenderPass()
+{
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = m_swapchain->GetSwapchainImageFormat();
+    colorAttachment.samples = m_vulkanDevice->maxUsableSampleCount();
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentDescription depthAttachment{};
+    depthAttachment.format = m_vulkanDevice->findDepthFormat();
+    depthAttachment.samples = m_vulkanDevice->maxUsableSampleCount();
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = 1;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentDescription colorAttachmentResolve{};
+    colorAttachmentResolve.format = m_swapchain->GetSwapchainImageFormat();
+    colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colorAttachmentResolveRef{};
+    colorAttachmentResolveRef.attachment = 2;
+    colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+    subpass.pResolveAttachments = &colorAttachmentResolveRef;
+
+    std::array<VkSubpassDependency, 2> dependencies;
+    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass = 0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    dependencies[0].dependencyFlags = 0;
+
+    dependencies[1].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[1].dstSubpass = 0;
+    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].srcAccessMask = 0;
+    dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    dependencies[1].dependencyFlags = 0;
+
+    std::vector<VkAttachmentDescription> attachmenst = { colorAttachment ,depthAttachment,colorAttachmentResolve };
+
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = attachmenst.size();
+    renderPassInfo.pAttachments = attachmenst.data();
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = dependencies.size();
+    renderPassInfo.pDependencies = dependencies.data();
+
+    if (vkCreateRenderPass(m_vulkanDevice->logicalDevice(), &renderPassInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create render pass!");
     }
 }
 

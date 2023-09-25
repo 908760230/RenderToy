@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine.h>
+#include "Engine.h"
 #include "UIClass.h"
 
 class GUIApplication : public Engine 
@@ -22,16 +22,17 @@ protected:
 	void updateUniformBuffer(uint32_t imageIndex) override;
 	void drawFrame() override;
 	std::string getWindowTitle() const override { return "ImGui Demo"; }
+	void rebuildFrame() override;
 private:
-	UIClass* m_ui = nullptr;
+	std::shared_ptr<UIClass> m_ui;
 	VkDescriptorSetLayout m_descriptorSetLayout;
 	VkPipelineLayout m_graphicsPipelineLayout;
 	VkPipeline m_graphicsPipeline;
 	VkDescriptorPool m_descriptorPool;
 
-	VulkanBuffer m_vertexBuffer;
-	VulkanBuffer m_indexBuffer;
-	std::vector<VulkanBuffer> m_uniformBuffers;
+	std::shared_ptr<VulkanBuffer> m_vertexBuffer;
+	std::shared_ptr<VulkanBuffer> m_indexBuffer;
+	std::vector<std::shared_ptr<VulkanBuffer>> m_uniformBuffers;
 	std::vector<VkDescriptorSet> m_descriptorSets;
 };
 

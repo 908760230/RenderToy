@@ -44,8 +44,8 @@ void Application::prepare()
 
 void Application::createGraphicPipeline()
 {
-    VulkanShader vertShder(m_vulkanDevice, "vert.spv");
-    VulkanShader fragShder(m_vulkanDevice, "frag.spv");
+    VulkanShader vertShder(m_vulkanDevice, "../../RenderToy/vert.spv");
+    VulkanShader fragShder(m_vulkanDevice, "../../RenderToy/frag.spv");
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -152,7 +152,7 @@ void Application::createGraphicPipeline()
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = m_graphicsPipelineLayout;
-    pipelineInfo.renderPass = m_swapchain->renderPass();
+    pipelineInfo.renderPass = m_renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDepthStencilState = &depthStencil;
@@ -165,14 +165,23 @@ void Application::createGraphicPipeline()
 
 void Application::createVertexBuffer()
 {
-    m_vertexBuffer.setVulkanDevice(m_vulkanDevice);
-    m_vertexBuffer.createBuffer(m_vertices.data(), m_vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    VulkanBuffer stagingBuffer(*m_vulkanDevice, m_vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    stagingBuffer.mapMemory();
+    stagingBuffer.update(m_vertices.data());
+
+    m_vertexBuffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice, m_vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    m_vertexBuffer->copyBuffer(stagingBuffer);
+
 }
 
 void Application::createindexBuffer()
 {
-    m_indexBuffer.setVulkanDevice(m_vulkanDevice);
-    m_indexBuffer.createBuffer(m_indices.data(), sizeof(m_indices[0]) * m_indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    VulkanBuffer stagingBuffer(*m_vulkanDevice, m_indices.size() * sizeof(m_indices[0]), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    stagingBuffer.mapMemory();
+    stagingBuffer.update(m_indices.data());
+
+    m_indexBuffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice, m_indices.size() * sizeof(m_indices[0]), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    m_indexBuffer->copyBuffer(stagingBuffer);
 }
 
 void Application::createDescriptorSetLayout()
@@ -210,8 +219,8 @@ void Application::createUniformBuffers()
     m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t index = 0; index < MAX_FRAMES_IN_FLIGHT; index++) {
-        m_uniformBuffers[index].setVulkanDevice(m_vulkanDevice);
-        m_uniformBuffers[index].createUniformBuffer(bufferSize);
+        m_uniformBuffers[index] = std::make_shared<VulkanBuffer>(*m_vulkanDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        m_uniformBuffers[index]->mapMemory();
     }
 }
 
@@ -251,7 +260,7 @@ void Application::createDescriptorSets()
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_uniformBuffers[i].buffer();
+        bufferInfo.buffer = m_uniformBuffers[i]->buffer();
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -284,24 +293,25 @@ void Application::createDescriptorSets()
 void Application::createTextureImage()
 {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("viking_room.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load("../../RenderToy/viking_room.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
     }
-    VulkanBuffer stagingBuffer(m_vulkanDevice);
-    stagingBuffer.createBufferWithoutCopy(pixels, imageSize);
+    VulkanBuffer stagingBuffer(*m_vulkanDevice,imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    stagingBuffer.mapMemory();
+    stagingBuffer.update(pixels);
 
     stbi_image_free(pixels);
 
     m_textureImage = new VulkanImage(m_vulkanDevice);
     m_textureImage->createImage(texWidth, texHeight, m_mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-    VulkanCommand command(m_vulkanDevice);
+    VulkanCommand command(*m_vulkanDevice);
     command.transitionImageLayout(m_textureImage->image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
-    VulkanCommand copyCommand(m_vulkanDevice);
+    VulkanCommand copyCommand(*m_vulkanDevice);
     copyCommand.copyBufferToImage(stagingBuffer.buffer(), m_textureImage->image(), static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
     m_textureImage->generateMipMaps(VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
@@ -341,7 +351,7 @@ void Application::loadModel() {
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "viking_room.obj")) {
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "../../RenderToy/viking_room.obj")) {
         throw std::runtime_error(warn + err);
     }
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
@@ -384,8 +394,8 @@ void Application::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_swapchain->renderPass();
-    renderPassInfo.framebuffer = m_swapchain->frameBuffer(imageIndex);
+    renderPassInfo.renderPass = m_renderPass;
+    renderPassInfo.framebuffer =m_framebuffers[imageIndex];
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = m_swapchain->extend2D();
 
@@ -414,10 +424,10 @@ void Application::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
     scissor.extent = m_swapchain->extend2D();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = { m_vertexBuffer.buffer() };
+    VkBuffer vertexBuffers[] = { m_vertexBuffer->buffer() };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelineLayout, 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
     vkCmdDrawIndexed(commandBuffer, m_indices.size(), 1, 0, 0, 0);
 
@@ -441,7 +451,7 @@ void Application::updateUniformBuffer(uint32_t currentImage)
     ubo.proj = glm::perspective(glm::radians(45.0f), extent2D.width / (float)extent2D.height, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
 
-    memcpy(m_uniformBuffers[currentImage].data(), &ubo, sizeof(ubo));
+    memcpy(m_uniformBuffers[currentImage]->data(), &ubo, sizeof(ubo));
 }
 
 
