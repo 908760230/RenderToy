@@ -11,6 +11,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories("${PROJECT_SOURCE_DIR}/Common")
 include_directories("${PROJECT_SOURCE_DIR}/ThirdParty/glm")
+include_directories("${PROJECT_SOURCE_DIR}/ThirdParty/ktx/include")
+
+set(KTX_DIR "${PROJECT_SOURCE_DIR}/ThirdParty/ktx")
 
 add_subdirectory(Common)
 add_subdirectory(ImGUI)

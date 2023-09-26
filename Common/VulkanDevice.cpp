@@ -31,6 +31,8 @@ VulkanDevice::VulkanDevice(const VulkanDevice& other)
     m_logicalDevice = other.m_logicalDevice;
     m_queueFamilyIndices = other.m_queueFamilyIndices;
     m_msaa = other.m_msaa;
+    features = other.features;
+    properties = other.properties;
 }
 
 void VulkanDevice::createDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, bool validation)
@@ -58,7 +60,7 @@ void VulkanDevice::createDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR su
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = true;
     deviceFeatures.sampleRateShading = true;
-
+    features = deviceFeatures;
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 

@@ -36,6 +36,7 @@ public:
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	VkPhysicalDeviceProperties properties;
+	VkPhysicalDeviceFeatures features;
 private:
 	VkSampleCountFlagBits getMaxUsableSampleCount();
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);

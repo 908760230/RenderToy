@@ -15,6 +15,7 @@ public:
 	void update(void* source);
 	void flushMemory();
 
+	VkDescriptorBufferInfo descriptor{};
 private:
 
 	void clear();

@@ -32,6 +32,10 @@ VulkanBuffer::VulkanBuffer(VulkanDevice &vulkanDevice, VkDeviceSize size, VkBuff
     }
 
     vkBindBufferMemory(vulkanDevice.logicalDevice(), m_buffer, m_bufferMemory, 0);
+
+    descriptor.buffer = m_buffer;
+    descriptor.offset = 0;
+    descriptor.range = VK_WHOLE_SIZE;
 }
 
 VulkanBuffer::~VulkanBuffer()

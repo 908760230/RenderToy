@@ -56,7 +56,7 @@ Engine::~Engine()
         vkDestroyFramebuffer(m_vulkanDevice->logicalDevice(), framebuffer, nullptr);
     }
     vkDestroyRenderPass(m_vulkanDevice->logicalDevice(), m_renderPass, nullptr);
-
+    vkDestroyPipelineCache(m_vulkanDevice->logicalDevice(), m_pipelineCache, nullptr);
     if (m_swapchain) delete m_swapchain;
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(m_vulkanDevice->logicalDevice(), m_renderFinishedSemaphores[i], nullptr);
@@ -83,6 +83,7 @@ void Engine::init()
     createRenderPass();
     createFrameBuffers();
     createCommandBuffers();
+    createPipelineCache();
     prepare();
 }
 
@@ -339,6 +340,14 @@ void Engine::createSurface()
     if (vkCreateWin32SurfaceKHR(m_instance, &createInfo, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
+}
+
+void Engine::createPipelineCache()
+{
+    VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
+    pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+    auto result = vkCreatePipelineCache(m_vulkanDevice->logicalDevice(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache);
+    if (result != VK_SUCCESS) throw std::runtime_error("failed to create pipeline cache");
 }
 
 void Engine::createCommandBuffers()

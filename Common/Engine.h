@@ -62,7 +62,7 @@ private:
 	void createInstance();
 	void setupDebugMessenger();
 	void createSurface();
-
+	void createPipelineCache();
 protected:
 	VulkanDevice *m_vulkanDevice;
 	std::vector<VkCommandBuffer> m_commandBuffers;
@@ -91,5 +91,6 @@ protected:
 	std::vector<VkFramebuffer> m_framebuffers;
 
 	VkRenderPass m_renderPass = nullptr;
+	VkPipelineCache m_pipelineCache;
 };
 
