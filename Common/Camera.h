@@ -54,6 +54,10 @@ public:
         m_rotation = value;
     }
 
+    void rotate(glm::vec3& delta) {
+        m_rotation += delta;
+    }
+
     glm::vec3 getPosition() const {
         return m_position;
     }
@@ -61,6 +65,7 @@ public:
     glm::vec4 getViewPos() {
         return glm::vec4(m_position, 0) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
     }
+
 private:
     glm::vec3 m_position;
     glm::vec3 m_rotation;

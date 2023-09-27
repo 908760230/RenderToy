@@ -33,6 +33,11 @@ private:
 	void createLayouts();
 	void setupDescriptor();
 	void createGraphicPipeline();
+
+protected:
+
+	void mouseEvent(MouseInfo& info) override;
+	void keyDown(size_t key) override;
 private:
 	Camera m_camera;
 	UniformContent m_uniformContent;

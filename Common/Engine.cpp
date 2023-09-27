@@ -42,7 +42,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
 }
 
 
-Engine::Engine()
+Engine::Engine():m_mainWindow(*this)
 {
 }
 

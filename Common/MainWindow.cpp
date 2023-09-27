@@ -1,14 +1,15 @@
 #include "MainWindow.h"
+#include "Engine.h"
 #include <iostream>
 
 const char* WINDOW_CLASS_NAME = "WINCLASS1";
 MainWindow* instance;
 
-LRESULT  WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) { 
+LRESULT  MainWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	PAINTSTRUCT		ps;		// used in WM_PAINT
 	HDC				hdc;	// handle to a device context
-	float x = LOWORD(lparam);
-	float y = HIWORD(lparam);
+	int x = LOWORD(lparam);
+	int y = HIWORD(lparam);
 	MouseInfo& mouseInfo = instance->mouseInfo();
 	// what is the message 
 	switch (msg)
@@ -59,21 +60,25 @@ LRESULT  WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	}
 	case WM_MOUSEMOVE: {
 		mouseInfo.m_mousePos = glm::vec2(x, y);
+		instance->m_engine.mouseEvent(mouseInfo);
 		break;
 	}
 	case WM_LBUTTONDOWN: {		
 		mouseInfo.m_mousePos = glm::vec2(x, y);
 		mouseInfo.leftDown = true;
+		instance->m_engine.mouseEvent(mouseInfo);
 		break;
 	}
 	case WM_RBUTTONDOWN: {
 		mouseInfo.m_mousePos = glm::vec2(x, y);
 		mouseInfo.rightDown = true;
+		instance->m_engine.mouseEvent(mouseInfo);
 		break;
 	}
 	case WM_MBUTTONDOWN: {
 		mouseInfo.m_mousePos = glm::vec2(x, y);
 		mouseInfo.wheelDown = true;
+		instance->m_engine.mouseEvent(mouseInfo);
 		break;
 	}
 	case WM_LBUTTONUP:
@@ -85,13 +90,16 @@ LRESULT  WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	case WM_MBUTTONUP:
 		mouseInfo.wheelDown = false;
 		break;
+	case WM_KEYDOWN:
+		instance->m_engine.keyDown(wparam);
+		break;
 	default:break;
 
 	} // end switch
 	return (DefWindowProc(hwnd, msg, wparam, lparam));
 }
 
-MainWindow::MainWindow()
+MainWindow::MainWindow(Engine& engine):m_engine(engine)
 {
 	// first fill in the window class stucture
 	winclass.cbSize = sizeof(WNDCLASSEX);

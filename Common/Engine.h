@@ -25,6 +25,7 @@ extern int MAX_FRAMES_IN_FLIGHT;
 
 class Engine
 {
+	friend class MainWindow;
 public:
 	Engine();
 	~Engine();
@@ -57,6 +58,12 @@ protected:
 	virtual void createFrameBuffers();
 	virtual void rebuildFrame();
 	void createCommandBuffers();
+
+protected:
+	virtual void mouseEvent(MouseInfo &info) {};
+
+	virtual void keyDown(size_t key) {};
+	virtual void keyUp(size_t key) {};
 
 private:
 	void createInstance();

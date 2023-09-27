@@ -391,3 +391,26 @@ void TextureApplication::createGraphicPipeline()
 	if (result != VK_SUCCESS) throw std::runtime_error("failed to create graphic pipeline ");
 }
 
+void TextureApplication::mouseEvent(MouseInfo& info)
+{
+	static glm::vec2 downOrigin(0, 0);
+	float factor = 0.005;
+	if (info.leftDown) {
+		if (downOrigin == glm::vec2(0, 0)) downOrigin = info.m_mousePos;
+		float dx = (info.m_mousePos.x - downOrigin.x) * factor;
+		float dy = (info.m_mousePos.y - downOrigin.y) * factor;
+
+		m_camera.rotate(glm::vec3(-dy, dx, 0));
+	}
+	else
+	{
+		downOrigin = glm::vec2(0, 0);
+	}
+}
+
+void TextureApplication::keyDown(size_t key)
+{
+	if (key == VK_UP) m_uniformContent.lodBias += 0.1;
+	else if (key == VK_DOWN) m_uniformContent.lodBias -= 0.1;
+}
+

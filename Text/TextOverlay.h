@@ -6,6 +6,7 @@
 #include <VulkanBuffer.h>
 #include "stb_font_consolas_24_latin1.inl"
 #include <vector>
+#include <memory>
 
 #define TEXTOVERLAY_MAX_CHAR_COUNT 2048
 
@@ -19,7 +20,7 @@ private:
 
 	VkSampler m_sampler;
 	VulkanImage m_image;
-	VulkanBuffer m_buffer;
+	std::shared_ptr<VulkanBuffer> m_buffer;
 
 	VkDescriptorPool m_descriptorPool;
 	VkDescriptorSetLayout m_descriptorSetLayout;

@@ -28,20 +28,20 @@ void TextOverlay::prepareResources()
 	if(result!=VK_SUCCESS) throw std::runtime_error("failed to allocate text command buffers!");
 
 	VkDeviceSize bufferSize = TEXTOVERLAY_MAX_CHAR_COUNT * sizeof(glm::vec4);
-	m_buffer.setVulkanDevice(m_vulkanDevice);
-	m_buffer.createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	m_buffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice,bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
-	VulkanBuffer stagingBuffer(m_vulkanDevice);
-	stagingBuffer.createBufferWithoutCopy(&font24pixels[0][0], fontWidth * fontHeight);
+	VulkanBuffer stagingBuffer(*m_vulkanDevice, fontWidth * fontHeight, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	stagingBuffer.mapMemory();
+	stagingBuffer.update(&font24pixels[0][0]);
 
 	m_image.setVulkanDevice(m_vulkanDevice);
 	m_image.createImage(fontWidth, fontHeight, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-	VulkanCommand command(m_vulkanDevice);
+	VulkanCommand command(*m_vulkanDevice);
 	command.transitionImageLayout(m_image.image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
-	VulkanCommand copyCommand(m_vulkanDevice);
+	VulkanCommand copyCommand(*m_vulkanDevice);
 	copyCommand.copyBufferToImage(stagingBuffer.buffer(), m_image.image(), fontWidth, fontWidth);
-	VulkanCommand transitionCommand(m_vulkanDevice);
+	VulkanCommand transitionCommand(*m_vulkanDevice);
 	transitionCommand.transitionImageLayout(m_image.image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
 
 	VkSamplerCreateInfo samplerInfo{};

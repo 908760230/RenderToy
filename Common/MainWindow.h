@@ -8,7 +8,7 @@
 #include <string>
 #include <glm/glm.hpp>
 
-
+class Engine;
 struct MouseInfo
 {
 	glm::vec2 m_mousePos{};
@@ -21,7 +21,7 @@ struct MouseInfo
 class MainWindow
 {
 public:
-	MainWindow();
+	MainWindow(Engine &engine);
 	MainWindow(const MainWindow&) = delete;
 	MainWindow& operator=(const MainWindow&) = delete;
 
@@ -35,6 +35,8 @@ public:
 	MouseInfo& mouseInfo() { return m_mouseInfo; }
 	bool exited = false;
 private:
+	static LRESULT  WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+	Engine& m_engine;
 	WNDCLASSEX winclass; // this will hold the class we create
 	HWND	   hwnd;	 // generic window handle
 	MSG		   msg;		 // generic message
