@@ -7,10 +7,10 @@
 TextureApplication::TextureApplication()
 {
 	m_mainWindow.setWindowTitle("sample_texture");
+	m_mainWindow.resize(1280, 720);
 	m_camera.setPosition(glm::vec3(0, 0, -2.5f));
 
-	glm::quat rotation(glm::vec3(0.0f, 15.0f, 0.0f));
-	m_camera.setRotation(rotation);
+	m_camera.setRotation(glm::vec3(0.0f, 15.0f, 0.0f));
 	m_camera.setFieldOfView(60);
 	m_camera.setAspectRatio((float)m_mainWindow.width() / m_mainWindow.height());
 	m_camera.setNearPlane(0.1);
@@ -58,7 +58,7 @@ void TextureApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint
 	renderPassInfo.renderArea.extent = m_swapchain->extend2D();
 
 	std::array<VkClearValue, 2> clearValue{};
-	clearValue[0].color = { 0.78f, 0.93f, 0.8f, 1.0f };
+	clearValue[0].color = { 0, 0, 0, 1.0f };
 	clearValue[1].depthStencil = { 1.0f,0 };
 
 	renderPassInfo.clearValueCount = clearValue.size();
@@ -85,7 +85,7 @@ void TextureApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint
 	VkBuffer vertexBuffers[] = { m_vertexBuffer->buffer() };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT16);
+	vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT32);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
 	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
 
@@ -100,7 +100,7 @@ void TextureApplication::updateUniformBuffer(uint32_t currentImage)
 {
 	m_uniformContent.modelView = m_camera.getView();
 	m_uniformContent.projection = m_camera.getProjection();
-	m_uniformContent.viewPos = glm::vec4(m_camera.getPosition(), 0);
+	m_uniformContent.viewPos = m_camera.getViewPos();
 
 	memcpy(m_uniformBuffer->data(), &m_uniformContent, sizeof(m_uniformContent));
 }

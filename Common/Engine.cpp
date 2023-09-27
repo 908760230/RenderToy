@@ -44,8 +44,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
 
 Engine::Engine()
 {
-    m_mainWindow.setWindowTitle(getWindowTitle());
-    m_mainWindow.show();
 }
 
 Engine::~Engine()
@@ -71,6 +69,8 @@ Engine::~Engine()
 
 void Engine::init()
 {
+    m_mainWindow.show();
+
     createInstance();
     if(m_validationLayer) setupDebugMessenger();
     createSurface();

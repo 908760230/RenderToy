@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(samples)
+project(RenderToy)
 
 
 find_package(Vulkan REQUIRED)

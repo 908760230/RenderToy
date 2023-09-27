@@ -50,18 +50,22 @@ public:
         m_position = pos;
     }
 
-    void setRotation(glm::quat& value) {
+    void setRotation(glm::vec3& value) {
         m_rotation = value;
     }
 
     glm::vec3 getPosition() const {
         return m_position;
     }
+
+    glm::vec4 getViewPos() {
+        return glm::vec4(m_position, 0) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
+    }
 private:
     glm::vec3 m_position;
+    glm::vec3 m_rotation;
     glm::vec3 m_scale = glm::vec3(1.f);
 
-    glm::quat m_rotation;
     float m_aspectRatio = 1.0f;
     float m_fov = glm::radians(60.f);
     float m_far = 100;
