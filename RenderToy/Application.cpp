@@ -11,6 +11,7 @@
 
 Application::Application()
 {
+    m_mainWindow.setWindowTitle("viking");
 }
 
 Application::~Application()

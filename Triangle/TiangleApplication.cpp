@@ -13,6 +13,11 @@ std::vector<uint16_t> indices = {
     0, 1, 2
 };
 
+TiangleApplication::TiangleApplication()
+{
+    m_mainWindow.setWindowTitle("Triangle");
+}
+
 void TiangleApplication::prepare()
 {
     {

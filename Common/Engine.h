@@ -36,7 +36,7 @@ public:
 	virtual void update() {};
 	void enableValidationLayer() { m_validationLayer = true; };
 	VulkanDevice* vulkanDevice() const { return m_vulkanDevice; }
-	virtual std::string getWindowTitle() const { return "Render Toy"; }
+	std::string getWindowTitle() const { return m_mainWindow.windowTitle(); }
 	float frameTimer = 1.0f;
 private:
 	bool checkValidationLayerSupport();

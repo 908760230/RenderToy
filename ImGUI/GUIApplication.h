@@ -21,7 +21,6 @@ protected:
 	void createDescriptorSets();
 	void updateUniformBuffer(uint32_t imageIndex) override;
 	void drawFrame() override;
-	std::string getWindowTitle() const override { return "ImGui Demo"; }
 	void rebuildFrame() override;
 private:
 	std::shared_ptr<UIClass> m_ui;

@@ -58,6 +58,7 @@ namespace std {
 
 GUIApplication::GUIApplication()
 {
+    m_mainWindow.setWindowTitle("ImGui Demo");
 }
 
 GUIApplication::~GUIApplication()

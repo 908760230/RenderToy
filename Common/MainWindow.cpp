@@ -123,7 +123,7 @@ int MainWindow::show()
 	if (!RegisterClassEx(&winclass)) return 0;
 	hwnd = CreateWindowEx(NULL, // extended style
 		"WINCLASS1",   // class
-		windowTitle.c_str(), // title
+		m_windowTitle.c_str(), // title
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		0, 0,	    // initial x,y
 		m_width, m_height,  // initial width, height
@@ -144,7 +144,7 @@ void MainWindow::resize(int w, int h)
 
 void MainWindow::setWindowTitle(std::string name)
 {
-	windowTitle = name;
+	m_windowTitle = name;
 }
 
 bool MainWindow::processEvent()

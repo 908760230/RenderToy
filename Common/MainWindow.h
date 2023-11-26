@@ -28,6 +28,7 @@ public:
 	int show();
 	void resize(int w, int h);
 	void setWindowTitle(std::string name);
+	std::string windowTitle() const { return m_windowTitle; }
 	bool processEvent();
 	HWND windowHandle() const { return hwnd; }
 	int height() const { return m_height; }
@@ -43,6 +44,6 @@ private:
 
 	int m_height = 600;
 	int m_width = 800;
-	std::string windowTitle;
+	std::string m_windowTitle;
 	MouseInfo m_mouseInfo;
 };

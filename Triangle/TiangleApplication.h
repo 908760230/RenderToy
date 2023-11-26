@@ -48,6 +48,7 @@ namespace std {
 class TiangleApplication : public Engine
 {
 public:
+	TiangleApplication();
     void prepare() override;
 
 private:

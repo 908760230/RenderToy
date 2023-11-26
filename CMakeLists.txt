@@ -21,4 +21,6 @@ add_subdirectory(RenderToy)
 add_subdirectory(Text)
 add_subdirectory(Texture)
 add_subdirectory(Triangle)
+add_subdirectory(DynamicUniform)
+
 
