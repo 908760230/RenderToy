@@ -21,10 +21,10 @@ void TextOverlay::prepareResources()
 	VkCommandBufferAllocateInfo commandBufferAllcoInfo{};
 	commandBufferAllcoInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	commandBufferAllcoInfo.commandPool = m_commandPool;
-	commandBufferAllcoInfo.commandBufferCount = cmdBuffers.size();
+	commandBufferAllcoInfo.commandBufferCount = m_cmdBuffers.size();
 	commandBufferAllcoInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-	result = vkAllocateCommandBuffers(m_vulkanDevice->logicalDevice(), &commandBufferAllcoInfo, cmdBuffers.data());
+	result = vkAllocateCommandBuffers(m_vulkanDevice->logicalDevice(), &commandBufferAllcoInfo, m_cmdBuffers.data());
 	if(result!=VK_SUCCESS) throw std::runtime_error("failed to allocate text command buffers!");
 
 	VkDeviceSize bufferSize = TEXTOVERLAY_MAX_CHAR_COUNT * sizeof(glm::vec4);
@@ -37,12 +37,14 @@ void TextOverlay::prepareResources()
 	m_image.setVulkanDevice(m_vulkanDevice);
 	m_image.createImage(fontWidth, fontHeight, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-	VulkanCommand command(*m_vulkanDevice);
-	command.transitionImageLayout(m_image.image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
-	VulkanCommand copyCommand(*m_vulkanDevice);
-	copyCommand.copyBufferToImage(stagingBuffer.buffer(), m_image.image(), fontWidth, fontWidth);
-	VulkanCommand transitionCommand(*m_vulkanDevice);
-	transitionCommand.transitionImageLayout(m_image.image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
+	{
+		VulkanCommand command(*m_vulkanDevice);
+		command.transitionImageLayout(m_image.image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+		VulkanCommand copyCommand(*m_vulkanDevice);
+		copyCommand.copyBufferToImage(stagingBuffer.buffer(), m_image.image(), fontWidth, fontWidth);
+		VulkanCommand transitionCommand(*m_vulkanDevice);
+		transitionCommand.transitionImageLayout(m_image.image(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
+	}
 
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -113,10 +115,19 @@ void TextOverlay::prepareResources()
 	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	writeDescriptorSet.pImageInfo = &descriptorImageInfo;
 	writeDescriptorSet.dstBinding = 0;
+
+	vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice(), 1, &writeDescriptorSet, 0, nullptr);
+
+	VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
+	pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+	result = vkCreatePipelineCache(m_vulkanDevice->logicalDevice(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache);
+	if (result != VK_SUCCESS) throw std::runtime_error("failed to create pipeline cache");
 }
 
 void TextOverlay::prepareRenderPass()
 {
+	VkAttachmentDescription colorAttachmentDescription{};
+	colorAttachmentDescription.format = m_swapchain->GetSwapchainImageFormat();
 }
 
 void TextOverlay::preparePipeline()
@@ -124,5 +135,9 @@ void TextOverlay::preparePipeline()
 }
 
 TextOverlay::TextOverlay(VulkanDevice* device, VulkanSwapchain* swapchain) :m_vulkanDevice(device), m_swapchain(swapchain) {
-
+	m_graphicQueue = device->graphicQueue();
+	m_cmdBuffers.resize(swapchain->GetImageViews().size());
+	prepareResources();
+	prepareRenderPass();
+	preparePipeline();
 };

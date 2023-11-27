@@ -70,6 +70,10 @@ DynamicUniformBuffferApplication::DynamicUniformBuffferApplication()
 DynamicUniformBuffferApplication::~DynamicUniformBuffferApplication()
 {
 	free(uboDataDynamic.model);
+	vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice(), m_descriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice(), m_descriptorSetLayout, nullptr);
+	vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice(), m_pipelineLayout, nullptr);
+	vkDestroyPipeline(m_vulkanDevice->logicalDevice(), m_pipeline, nullptr);
 }
 
 void DynamicUniformBuffferApplication::prepare()
@@ -265,8 +269,6 @@ void DynamicUniformBuffferApplication::updateUniformBuffer(uint32_t currentImage
 	uboVs.projection = m_camera.getProjection();
 	uboVs.view = m_camera.getView();
 	memcpy(m_uniformViewBuffer->data(), &uboVs, sizeof(uboVs));
-
-	updateDynamicUniformBuffer();
 }
 
 void DynamicUniformBuffferApplication::drawFrame()
@@ -276,6 +278,10 @@ void DynamicUniformBuffferApplication::drawFrame()
 	vkWaitForFences(m_vulkanDevice->logicalDevice(), 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(m_vulkanDevice->logicalDevice(), 1, &m_inFlightFences[m_currentFrame]);
 
+	if (m_viewChanged) {
+		updateUniformBuffer(m_currentFrame);
+		m_viewChanged = false;
+	}
 	updateDynamicUniformBuffer();
 
 	recordCommandBuffer(m_commandBuffers[m_currentFrame], m_currentFrame);
@@ -308,7 +314,25 @@ void DynamicUniformBuffferApplication::drawFrame()
 	else if (result != VK_SUCCESS) {
 		throw std::runtime_error("failed to present swap chain image!");
 	}
-	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;F:\RenderToy\README.md
+}
+
+void DynamicUniformBuffferApplication::mouseEvent(MouseInfo& info)
+{
+	static glm::vec2 downOrigin(0, 0);
+	float factor = 0.005;
+	if (info.leftDown) {
+		if (downOrigin == glm::vec2(0, 0)) downOrigin = info.m_mousePos;
+		float dx = (info.m_mousePos.x - downOrigin.x) * factor;
+		float dy = (info.m_mousePos.y - downOrigin.y) * factor;
+
+		m_camera.rotate(glm::vec3(-dy, dx, 0));
+		m_viewChanged = true;
+	}
+	else
+	{
+		downOrigin = glm::vec2(0, 0);
+	}
 }
 
 void DynamicUniformBuffferApplication::updateDynamicUniformBuffer(bool force)
@@ -386,6 +410,7 @@ void DynamicUniformBuffferApplication::createUniformBuffer()
 	m_uniformViewBuffer->mapMemory();
 
 	m_uniformDynamicBuffer = std::make_shared<VulkanBuffer>(*m_vulkanDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	m_uniformDynamicBuffer->descriptor.range = dynamicAlignment;
 	m_uniformDynamicBuffer->mapMemory();
 
 	std::default_random_engine rndEngine((unsigned)time(nullptr));

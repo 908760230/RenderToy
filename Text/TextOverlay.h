@@ -21,6 +21,7 @@ private:
 	VkSampler m_sampler;
 	VulkanImage m_image;
 	std::shared_ptr<VulkanBuffer> m_buffer;
+	std::vector<VkCommandBuffer> m_cmdBuffers;
 
 	VkDescriptorPool m_descriptorPool;
 	VkDescriptorSetLayout m_descriptorSetLayout;
@@ -48,7 +49,6 @@ public:
 		AlignCenter
 	};
 	bool visible = true;
-	std::vector<VkCommandBuffer> cmdBuffers;
 
 	TextOverlay(VulkanDevice* device, VulkanSwapchain* swapchain);
 };

@@ -375,6 +375,7 @@ void GUIApplication::createDescriptorSets()
 
 void GUIApplication::updateUniformBuffer(uint32_t imageIndex)
 {
+    if (imageIndex != 0) return;
     static auto startTime = std::chrono::high_resolution_clock::now();
 
     auto currentTime = std::chrono::high_resolution_clock::now();

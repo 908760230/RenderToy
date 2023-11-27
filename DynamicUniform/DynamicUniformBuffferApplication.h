@@ -14,6 +14,8 @@ public:
 	void createFrameBuffers() override;
 	void updateUniformBuffer(uint32_t currentImage) override;
 	void drawFrame() override;
+	void mouseEvent(MouseInfo& info) override;
+
 	void updateDynamicUniformBuffer(bool force = false);
 
 
@@ -56,5 +58,5 @@ private:
 	glm::vec3 rotationSpeeds[OBJECT_INSTANCES];
 
 	float animationTimer = 0.0f;
-
+	bool m_viewChanged = false;
 };

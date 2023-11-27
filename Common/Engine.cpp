@@ -94,12 +94,14 @@ void Engine::run()
     {
         result = m_mainWindow.processEvent();
         update();
+        auto drawBefore = std::chrono::high_resolution_clock::now();
         if(result) drawFrame();
 
         m_frameCount++;
         auto currentTime = std::chrono::high_resolution_clock::now();
+        frameTimer = std::chrono::duration<double, std::milli>(currentTime - drawBefore).count() / 1000.0f;
+
         auto frameTime = std::chrono::duration<double, std::milli>(currentTime - m_preTimePoint).count();
-        frameTimer = frameTime / 1000.0f;
         if (frameTime > 1000) {
             auto fps = m_frameCount * (1000 / frameTime);
             auto title = getWindowTitle();
@@ -402,6 +404,7 @@ void Engine::rebuildFrame()
             vkDestroyFramebuffer(m_vulkanDevice->logicalDevice(), framebuffer, nullptr);
         }
     }
+    m_framebuffers.clear();
     createRenderPass();
     createFrameBuffers();
 }
