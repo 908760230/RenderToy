@@ -314,7 +314,7 @@ void DynamicUniformBuffferApplication::drawFrame()
 	else if (result != VK_SUCCESS) {
 		throw std::runtime_error("failed to present swap chain image!");
 	}
-	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;F:\RenderToy\README.md
+	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void DynamicUniformBuffferApplication::mouseEvent(MouseInfo& info)
