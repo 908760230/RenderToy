@@ -1,5 +1,5 @@
-#ifndef TEXTURE_H
-#define TEXTURE_H
+#ifndef VULKAN_TEXTURE_H
+#define VULKAN_TEXTURE_H
 
 #include <ktx.h>
 #include <ktxvulkan.h>
@@ -8,7 +8,7 @@
 #include "VulkanDevice.h"
 #include "VulkanImage.h"
 
-class Texture {
+class VulkanTexture {
 public:
 	VulkanDevice* device;
 	VulkanImage image;
@@ -18,7 +18,7 @@ public:
 };
 
 
-class Texture2D : public Texture {
+class Texture2D : public VulkanTexture {
 
 };
 #endif // !TEXTURE_H
