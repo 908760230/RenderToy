@@ -3,32 +3,37 @@
 #include "Engine.h"
 #include "Camera.h"
 
-class Application : public Engine {
+#include "VulkanGLTF.h"
+#include "Texture.h"
+
+class DescriptorBufferApplication : public Engine {
 public:
-	Application();
-	~Application();
+	DescriptorBufferApplication();
+	~DescriptorBufferApplication();
 
 	void prepare() override;
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
-	void createRenderPass() override;
-	void createFrameBuffers() override;
 	void updateUniformBuffer(uint32_t currentImage) override;
-	void drawFrame() override;
 	void mouseEvent(MouseInfo& info) override;
 
-	void updateDynamicUniformBuffer(bool force = false);
 
+	void loadAssets();
 
-	void generateCubes();
 	void createUniformBuffer();
 	void setupDescriptorSetLayout();
 	void setupDescriptorSet();
 	void preparePipeline();
 private:
+	
 	Camera m_camera;
-	std::shared_ptr<VulkanImage> m_texture;
-	std::shared_ptr<VulkanBuffer> m_indexBuffer;
-	std::shared_ptr<VulkanBuffer> m_vertexBuffer;
+	struct Cube {
+		glm::mat4 matrix;
+		Texture2D texture;
+		std::shared_ptr<VulkanBuffer> uniformBuffer;
+		glm::vec3 rotation;
+	};
+	std::array<Cube, 2> cubes;
+
 
 	std::shared_ptr<VulkanBuffer> m_uniformViewBuffer; // project and view
 	std::shared_ptr<VulkanBuffer> m_uniformDynamicBuffer; // object matrix
@@ -52,10 +57,6 @@ private:
 		glm::mat4 view;
 	} uboVs;
 
-	constexpr static int OBJECT_INSTANCES = 125;
-
-	glm::vec3 rotations[OBJECT_INSTANCES];
-	glm::vec3 rotationSpeeds[OBJECT_INSTANCES];
 
 	float animationTimer = 0.0f;
 	bool m_viewChanged = false;

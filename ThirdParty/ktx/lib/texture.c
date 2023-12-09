@@ -41,6 +41,7 @@
 #include "gl_format.h"
 #include "uthash.h"
 #include <math.h>
+#include "Texture.h"
 
 /**
  * @internal
@@ -1639,4 +1640,3 @@ ktxTexture_GetImageOffset(ktxTexture* This, ktx_uint32_t level,
 }
 
 /** @} */
-

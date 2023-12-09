@@ -1,3 +1,6 @@
 [submodule "ThirdParty/glm"]
 	path = ThirdParty/glm
 	url = http://github.com/g-truc/glm.git
+[submodule "ThirdParty/tinygltf"]
+	path = ThirdParty/tinygltf
+	url = https://github.com/syoyo/tinygltf.git

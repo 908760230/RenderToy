@@ -1,8 +1,8 @@
-#include "DynamicUniformBuffferApplication.h"
+#include "DescriptorBufferApplication.h"
 
 
 int main() {
-	DynamicUniformBuffferApplication app;
+	DescriptorBufferApplication app;
 	app.init();
 	app.run();
 	return 0;
